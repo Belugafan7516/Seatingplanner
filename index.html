@@ -180,14 +180,39 @@ md-outlined-text-field,md-outlined-select{display:block;width:100%}
 @media (pointer:coarse){
   .chip,.chipwrap .x{min-height:36px}
 }
+
+header.top{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 20px;background:var(--surface-container);box-shadow:0 1px 0 var(--outline-variant)}
+header.top .brand{min-width:0}
+header.top h1{margin:0;font-size:20px;font-weight:500}
+header.top p{margin:0;font-size:12px}
+header.top .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;flex:1 1 auto}
+@media (max-width:700px){
+  header.top{padding:8px 12px;position:sticky}
+  header.top .actions{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;width:100%;padding-bottom:2px}
+  header.top .actions > *{flex:none}
+  header.top #matStatus{display:none}
+}
+.seatpick{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.seatlbl{font-size:12px;color:var(--on-surface-variant);width:100%}
+.stepper{display:inline-flex;align-items:center;gap:4px;background:var(--surface-container-lowest);border-radius:20px;padding:2px}
+.stepper .count{min-width:32px;text-align:center;font-weight:500;font-size:16px}
+.seat.pop circle:not(.hit){animation:popIn .5s cubic-bezier(.2,1.4,.4,1) both;transform-box:fill-box;transform-origin:center}
+@keyframes popIn{from{transform:scale(.3)}to{transform:scale(1)}}
 </style>
 </head>
 <body>
 
 <header class="top no-print">
-  <h1>Seating Planner</h1>
-  <p id="matStatus" class="hint">Loading Material Web…</p>
-  <p>Set up the room, add students and their needs, then drag them into seats or let auto-assign place them.</p>
+  <div class="brand">
+    <h1>Seating Planner</h1>
+    <p id="matStatus" class="hint">Loading Material Web…</p>
+  </div>
+  <div class="actions">
+    <md-filled-button id="auto"><span slot="icon" class="ms">auto_awesome</span>Generate seating</md-filled-button>
+    <md-outlined-button id="genSettings"><span slot="icon" class="ms">tune</span>Limits</md-outlined-button>
+    <md-outlined-button id="clear"><span slot="icon" class="ms">clear_all</span>Clear seats</md-outlined-button>
+    <md-filled-tonal-button id="dl"><span slot="icon" class="ms">download</span>Download</md-filled-tonal-button>
+  </div>
 </header>
 
 <div class="app">
@@ -250,12 +275,7 @@ md-outlined-text-field,md-outlined-select{display:block;width:100%}
     </section>
 
     <section class="card">
-      <h2>Seat students</h2>
-      <div class="row">
-        <md-filled-button id="auto">Generate seating</md-filled-button>
-        <md-outlined-button id="genSettings"><span slot="icon" class="ms">tune</span>Limits</md-outlined-button>
-        <md-outlined-button id="clear">Clear seats</md-outlined-button>
-      </div>
+      <h2>Seating status</h2>
       <div id="status" class="status"></div>
       <p class="hint">Tip: click a student, then click a seat. Dragging also works. Drag a seated student back here to unseat them.</p>
     </section>
@@ -288,7 +308,6 @@ md-outlined-text-field,md-outlined-select{display:block;width:100%}
     <section class="card">
       <div class="row" style="justify-content:space-between">
         <h2>Seating plan</h2>
-        <md-filled-button class="no-print" id="dl"><span slot="icon" class="ms">download</span>Download</md-filled-button>
       </div>
       <table>
         <thead><tr><th>Student</th><th>Needs</th><th>Table</th><th>Seat</th></tr></thead>
@@ -475,18 +494,18 @@ function seed() {
   addItem('window', 200, H - 16);
   addItem('window', 600, H - 16);
   addItem('sensory', 800, 360);
-  for (const r of [170, 340]) for (const c of [40, 300, 560]) addItem('table_rect', c, r);
+  for (const r of [150, 370]) for (const c of [40, 300, 560]) addItem('table_rect', c, r);
 }
 const tables = () => items.filter(i => i.type === 'table');
 function seatPositions(t) {
   const n = t.seats, out = [];
   if (t.shape === 'round') {
-    const cx = t.x + t.w / 2, cy = t.y + t.h / 2, r = t.w / 2 + 28;
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2, r = t.w / 2 + 26;
     for (let k = 0; k < n; k++) { const a = -Math.PI / 2 + 2 * Math.PI * k / n; out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
   } else {
     const top = Math.ceil(n / 2), bot = n - top;
-    for (let k = 0; k < top; k++) out.push([t.x + t.w * (k + 1) / (top + 1), t.y - 28]);
-    for (let k = 0; k < bot; k++) out.push([t.x + t.w * (k + 1) / (bot + 1), t.y + t.h + 28]);
+    for (let k = 0; k < top; k++) out.push([t.x + t.w * (k + 1) / (top + 1), t.y - 26]);
+    for (let k = 0; k < bot; k++) out.push([t.x + t.w * (k + 1) / (bot + 1), t.y + t.h + 26]);
   }
   const a = (t.rot || 0) * Math.PI / 180, cx = t.x + t.w / 2, cy = t.y + t.h / 2, cs = Math.cos(a), sn = Math.sin(a);
   return out.map((p, k) => {
@@ -918,7 +937,7 @@ function roomSVG(atSeat, bs, withSel) {
     const isSel = withSel && sel && sel.kind === 'seat' && sel.id === p.id;
     const cls = `seat${who !== undefined ? ' filled' : ''}${bs.has(p.id) ? ' bad' : ''}${isSel ? ' selected' : ''}`;
     const tg = who !== undefined && tags[who]?.length ? ' · ' + tags[who].join(', ') : '';
-    s += `<g class="${cls}" data-seat="${p.id}"><title>${who !== undefined ? esc(who + tg) : 'Empty seat'}</title><circle class="hit" cx="${p.x}" cy="${p.y}" r="30"/><circle cx="${p.x}" cy="${p.y}" r="20"/>` +
+    s += `<g class="${cls}" data-seat="${p.id}"><title>${who !== undefined ? esc(who + tg) : 'Empty seat'}</title><circle class="hit" cx="${p.x}" cy="${p.y}" r="28"/><circle cx="${p.x}" cy="${p.y}" r="19"/>` +
          `<text x="${p.x}" y="${p.y + 4}">${who !== undefined ? esc(who.split(' ')[0].slice(0, 8)) : ''}</text></g>`;
   }
   return s;
@@ -927,10 +946,10 @@ const motionGSAP = () => (window.gsap && matchMedia('(prefers-reduced-motion: no
 let prevFilled = new Set();
 // Seats that just became filled pop into place
 function animateSeats() {
-  const now = new Set(Object.keys(studentAt)), G = motionGSAP();
-  if (G) room.querySelectorAll('[data-seat]').forEach(g => {
-    if (now.has(g.dataset.seat) && !prevFilled.has(g.dataset.seat))
-      G.fromTo(g, { scale: 0.3 }, { scale: 1, duration: 0.5, ease: 'back.out(2.2)', transformOrigin: '50% 50%' });
+  // Pop-in is a CSS animation on the seat circle only. Animating the seat group moved its drawing.
+  const now = new Set(Object.keys(studentAt));
+  room.querySelectorAll('[data-seat]').forEach(g => {
+    if (now.has(g.dataset.seat) && !prevFilled.has(g.dataset.seat)) g.classList.add('pop');
   });
   prevFilled = now;
 }
@@ -974,7 +993,16 @@ function renderInspector() {
     <div class="grid2">
       <md-outlined-text-field label="Width" id="fw" type="number" min="30" value="${it.w}"></md-outlined-text-field>
       <md-outlined-text-field label="Height" id="fh" type="number" min="14" value="${it.h}"></md-outlined-text-field>
-      ${it.type === 'table' ? `<md-outlined-text-field label="Seats" id="fs" type="number" min="1" max="12" value="${it.seats}"></md-outlined-text-field>
+      ${it.type === 'table' ? `<div class="seatpick" style="grid-column:1/3">
+        <span class="seatlbl">Seats per table</span>
+        <div class="stepper">
+          <md-icon-button id="sMinus" aria-label="Fewer seats"><span class="ms">remove</span></md-icon-button>
+          <span id="sCount" class="count">${it.seats}</span>
+          <md-icon-button id="sPlus" aria-label="More seats"><span class="ms">add</span></md-icon-button>
+        </div>
+        <md-outlined-select label="Preset" id="sPreset">${[2,4,6,8,10,12].map(n => `<md-select-option value="${n}"><div slot="headline">${n}</div></md-select-option>`).join('')}</md-outlined-select>
+        <md-text-button id="sAll">Apply to all tables</md-text-button>
+      </div>
       <md-outlined-select label="Shape" id="fshape"><md-select-option value="rect"><div slot="headline">Rectangle</div></md-select-option><md-select-option value="round"><div slot="headline">Round</div></md-select-option></md-outlined-select>` : ''}
     </div>
     <div class="row">
@@ -989,7 +1017,18 @@ function renderInspector() {
   num('fw', v => { it.w = snapSize(clamp(v, 30, W)); placeCenter(it, it.x + it.w / 2, it.y + it.h / 2); });
   num('fh', v => { it.h = snapSize(clamp(v, 14, H)); placeCenter(it, it.x + it.w / 2, it.y + it.h / 2); });
   if (it.type === 'table') {
-    num('fs', v => it.seats = clamp(v, 1, 12));
+    const setSeats = n => {
+      it.seats = clamp(n, 1, 12);
+      prune(); refresh();
+    };
+    $('#sMinus').onclick = () => setSeats(it.seats - 1);
+    $('#sPlus').onclick = () => setSeats(it.seats + 1);
+    $('#sPreset').onchange = e => setSeats(+e.target.value);
+    $('#sAll').onclick = () => {
+      tables().forEach(t => t.seats = clamp(it.seats, 1, 12));
+      prune(); refresh();
+      showToast(`All tables now have ${it.seats} seats.`);
+    };
     const sh = $('#fshape'); sh.value = it.shape;
     sh.onchange = () => { it.shape = sh.value; render(); };
   }
