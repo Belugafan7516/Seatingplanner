@@ -134,16 +134,18 @@ dialog::backdrop{animation:fadeIn .25s ease-out}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 @media (max-width:700px){.live{grid-template-columns:1fr}}
 @media (max-width:900px){.app{grid-template-columns:1fr}}
+#printSheet{display:none}
 @media print{
-  @page{size:landscape;margin:10mm}
-  body{background:#fff}
-  header.top,.side,.no-print{display:none!important}
-  .app{display:block;padding:0}
-  .card{background:none;padding:0;margin-top:12px;break-inside:avoid}
-  #room{border-radius:0}
-  table{font-size:11pt}
-  tr{break-inside:avoid}
+  @page{size:A4 landscape;margin:12mm}
+  body>*:not(#printSheet){display:none!important}
+  #printSheet{display:block!important}
 }
+#printSheet h1{font-size:20pt;margin:0 0 2mm;font-weight:600}
+#printSheet .psub{font-size:10pt;color:#555;margin:0 0 4mm}
+#printSheet .psvg{display:block;width:100%;height:auto;max-height:150mm;border:1px solid #ccc;border-radius:4mm}
+#printSheet .ptable{width:100%;border-collapse:collapse;margin-top:5mm;font-size:10pt;color:#000}
+#printSheet .ptable th,#printSheet .ptable td{border-bottom:1px solid #ccc;padding:2mm 3mm;text-align:left}
+#printSheet .ptable tr{break-inside:avoid}
 
 :root{
   --md-sys-color-primary:var(--primary);--md-sys-color-on-primary:var(--on-primary);
@@ -298,14 +300,14 @@ header.top .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justi
       <md-text-button id="reset">Reset room</md-text-button>
     </div>
 
-    <svg id="room" viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Classroom layout"></svg>
+    <svg id="room" class="print-area" viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Classroom layout"></svg>
 
     <section class="card no-print">
       <h2>Selected</h2>
       <div id="inspector"></div>
     </section>
 
-    <section class="card">
+    <section class="card print-area">
       <div class="row" style="justify-content:space-between">
         <h2>Seating plan</h2>
       </div>
@@ -318,6 +320,7 @@ header.top .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justi
 </div>
 
 <div id="ghost" class="ghost" hidden></div>
+<div id="printSheet"></div>
 <md-dialog id="dlg"></md-dialog>
 <md-dialog id="loadDlg">
   <div slot="headline">Generating seating</div>
@@ -330,7 +333,7 @@ header.top .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justi
     <p class="hint" id="busyDetail"></p>
   </form>
   <div slot="actions"><md-text-button id="cancelGen">Cancel</md-text-button></div>
-</md-dialog><p id="busyMsg">Loading…</p></div>
+</md-dialog></div>
 <div id="toast" hidden></div>
 
 <script type="text/plain" id="solver">
@@ -1251,6 +1254,21 @@ $('#reset').onclick = async () => {
 };
 $('#auto').onclick = () => { pending = null; generate({}); };
 $('#clear').onclick = () => { seatOf = {}; studentAt = {}; pending = null; refresh(); };
+function buildPrintSheet() {
+  const bs = new Set();
+  brokenRules().forEach(r => membersOf(r).forEach(n => seatOf[n] && bs.add(seatOf[n])));
+  const rows = students.slice().sort((x, y) => x.localeCompare(y)).map(n => {
+    const s = seatOf[n], needs = esc((tags[n] || []).join(', ') || '—');
+    if (!s) return `<tr><td>${esc(n)}</td><td>${needs}</td><td colspan="2">Not seated</td></tr>`;
+    const [tid, k] = s.split(':');
+    const t = items.find(i => i.id === tid);
+    return `<tr><td>${esc(n)}</td><td>${needs}</td><td>Table ${t.n}</td><td>Seat ${+k + 1}</td></tr>`;
+  }).join('');
+  $('#printSheet').innerHTML = `<h1>Seating plan</h1>
+    <p class="psub">${new Date().toLocaleDateString()}</p>
+    <svg class="psvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${roomSVG(studentAt, bs, false)}</svg>
+    <table class="ptable"><thead><tr><th>Student</th><th>Needs</th><th>Table</th><th>Seat</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
 function csvEscape(v) { const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }
 function downloadCsv() {
   const rows = [['Student', 'Needs', 'Table', 'Seat']];
@@ -1283,7 +1301,7 @@ $('#dl').onclick = async () => {
     buttons: [{ label: 'OK', value: 1, cls: 'filled' }]
   });
   if (choice === 'csv') { downloadCsv(); await started(); }
-  else if (choice === 'pdf') { setTimeout(() => window.print(), 300); await started(); }
+  else if (choice === 'pdf') { buildPrintSheet(); setTimeout(() => window.print(), 300); await started(); }
 };
 
 /* ---------- Start with a sample class ---------- */
