@@ -1,0 +1,1664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seating Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+:root{
+  --primary:#2F6B5B;--on-primary:#FFFFFF;--primary-container:#C9EBDD;--on-primary-container:#052018;
+  --secondary-container:#D8E6DF;--surface:#F6FAF7;--surface-container:#EBF0EC;--surface-container-high:#E5EBE7;
+  --surface-container-lowest:#FFFFFF;--on-surface:#171D1B;--on-surface-variant:#404944;
+  --outline:#707973;--outline-variant:#C0C9C2;--error:#BA1A1A;--error-container:#FFDAD6;--on-error-container:#410002;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --primary:#8DD4BE;--on-primary:#003829;--primary-container:#00513E;--on-primary-container:#A9F1D8;
+    --secondary-container:#3B4B44;--surface:#0F1512;--surface-container:#1B2420;--surface-container-high:#252E2A;
+    --surface-container-lowest:#141B18;--on-surface:#DDE4DF;--on-surface-variant:#C0C9C2;
+    --outline:#8A938D;--outline-variant:#404944;--error:#FFB4AB;--error-container:#93000A;--on-error-container:#FFDAD6;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Roboto,system-ui,sans-serif;background:var(--surface);color:var(--on-surface);font-size:14px}
+.ms{font-family:'Material Symbols Outlined';font-size:18px;line-height:1;font-feature-settings:'liga';vertical-align:middle}
+header.top{padding:16px 24px;background:var(--surface-container)}
+header.top h1{margin:0;font-size:22px;font-weight:500}
+header.top p{margin:2px 0 0;font-size:13px;color:var(--on-surface-variant)}
+.app{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;padding:16px;align-items:start}
+.side,.stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface-container);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-size:14px;font-weight:500;color:var(--on-surface-variant)}
+.card h3{margin:0;font-size:16px;font-weight:500}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hint{font-size:12px;color:var(--on-surface-variant);margin:0}
+.warn{color:var(--error)}
+.status{font-size:13px;line-height:1.5}
+.lbl2{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--on-surface-variant)}
+.field{font:inherit;font-size:14px;color:var(--on-surface);background:var(--surface-container-lowest);border:1px solid var(--outline);border-radius:4px;padding:10px 12px;width:100%;min-width:0}
+.field:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary)}
+textarea.field{resize:vertical;min-height:100px}
+.btn{font:inherit;font-weight:500;font-size:14px;border-radius:20px;padding:9px 18px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.btn.filled{background:var(--primary);color:var(--on-primary)}
+.btn.tonal{background:var(--secondary-container);color:var(--on-surface)}
+.btn.outlined{background:transparent;color:var(--primary);border-color:var(--outline)}
+.btn.text{background:transparent;color:var(--primary);padding:9px 12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px}
+.pool{display:flex;flex-wrap:wrap;gap:6px}
+.chipwrap{display:inline-flex;align-items:center;background:var(--surface-container-lowest);border:1px solid var(--outline-variant);border-radius:10px;overflow:hidden}
+.chip{padding:6px 10px;cursor:grab;touch-action:none;user-select:none;font-size:13px}
+.chip.seated{opacity:.55}
+.chip.pending{background:var(--primary-container)}
+.chipwrap .x{border:0;background:transparent;color:var(--on-surface-variant);padding:6px 8px;cursor:pointer;font-size:14px}
+.tag{font-size:11px;padding:2px 7px;border-radius:6px;background:var(--secondary-container);margin-right:4px;display:inline-block}
+.tagged{display:flex;flex-direction:column;gap:6px}
+.tagged button{all:unset;cursor:pointer;font-size:13px;padding:4px 0}
+.rule{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:6px 6px 6px 12px;border-radius:14px;background:var(--surface-container-lowest)}
+.rule.bad{background:var(--error-container);color:var(--on-error-container)}
+.rule button{border:0;background:transparent;cursor:pointer;color:inherit;font-size:16px;padding:4px 8px}
+.sub{font-size:12px;font-weight:500;color:var(--on-surface-variant);margin-top:4px}
+#room{width:100%;height:auto;display:block;background:var(--surface-container-lowest);border-radius:20px;touch-action:none;user-select:none}
+.floor{fill:#FBFDFB}
+.item{stroke:#707973;stroke-width:1.5;cursor:move}
+.item.selected{stroke:#2F6B5B;stroke-width:3}
+.table{fill:#F1F5F2}
+.window{fill:#CFE7F4;stroke:#4C8BB0}
+.whiteboard{fill:#FFFFFF;stroke:#5C6660;stroke-width:3}
+.desk{fill:#E6D2B4;stroke:#8A6A48}
+.door{fill:#B98E64;stroke:#6E4F30}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:0 8px}
+.sensory{fill:#E9E1F7;stroke:#6B5B95;stroke-width:2;stroke-dasharray:8 6}
+.lbl{font-size:12px;fill:#404944;text-anchor:middle;pointer-events:none;font-weight:500}
+.seat{cursor:pointer}
+.seat circle{fill:#E5EBE7;stroke:#C0C9C2;stroke-width:1.5}
+.seat.filled circle{fill:#C9EBDD;stroke:#2F6B5B}
+.seat.bad circle{fill:#FFDAD6;stroke:#BA1A1A}
+.seat.selected circle{stroke:#2F6B5B;stroke-width:3}
+.seat.drop circle{fill:#8DD4BE;stroke:#052018;stroke-width:3}
+.seat text{font-size:9px;text-anchor:middle;fill:#052018;pointer-events:none;font-weight:500}
+.ghost{position:fixed;pointer-events:none;z-index:9;padding:6px 12px;border-radius:10px;background:var(--primary);color:var(--on-primary);font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--outline-variant)}
+th{font-weight:500;color:var(--on-surface-variant);font-size:13px}
+
+dialog{border:0;border-radius:28px;padding:24px;background:var(--surface-container-high);color:var(--on-surface);width:min(480px,calc(100% - 32px));box-shadow:0 8px 30px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h3{margin:0 0 12px;font-size:20px;font-weight:500}
+dialog .dlgbody{font-size:14px;line-height:1.5;display:flex;flex-direction:column;gap:8px}
+dialog .dlgact{justify-content:flex-end;margin-top:20px}
+dialog ul{margin:0;padding-left:18px}
+#busy-unused{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:20;color:#fff}
+#busy[hidden]{display:none}
+.spinner{flex:none;width:40px;height:40px;border:4px solid var(--outline-variant);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B3430;color:#F1F5F2;padding:12px 20px;border-radius:12px;font-size:14px;z-index:30;box-shadow:0 4px 14px rgba(0,0,0,.3);transition:opacity .3s}
+#toast[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+#loadDlg{width:min(920px,calc(100% - 32px))}
+.live{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+#liveRoom{width:100%;height:auto;display:block;background:#FFFFFF;border-radius:14px;pointer-events:none}
+.runs{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.runs div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:12px;background:var(--surface-container-lowest)}
+.runs .best{outline:2px solid var(--primary)}
+.bar{height:6px;border-radius:3px;background:var(--outline-variant);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--primary);transition:width .3s}
+
+.chipwrap,.rule{animation:rise .35s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*35ms)}
+@keyframes rise{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+dialog[open]{animation:dlgIn .3s cubic-bezier(.2,.8,.2,1)}
+dialog::backdrop{animation:fadeIn .25s ease-out}
+@keyframes dlgIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#toast{animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+.btn{transition:transform .15s ease,box-shadow .2s ease,background-color .2s ease,opacity .2s}
+.btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.14)}
+.btn:active:not(:disabled){transform:scale(.96)}
+.btn:disabled{opacity:.5;cursor:default}
+.chip{transition:transform .15s ease}
+.chip:active{transform:scale(1.05)}
+.seat circle{transition:fill .35s ease,stroke .35s ease}
+.seat:hover circle{stroke-width:3}
+.seat.drop circle{animation:pulse .7s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.15)}}
+.item{transition:filter .2s ease}
+.item:hover{filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+.runs div{transition:background-color .3s ease}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+@media (max-width:700px){.live{grid-template-columns:1fr}}
+@media (max-width:900px){.app{grid-template-columns:1fr}}
+#printSheet{display:none}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  body>*:not(#printSheet){display:none!important}
+  #printSheet{display:block!important}
+}
+#printSheet h1{font-size:20pt;margin:0 0 2mm;font-weight:600}
+#printSheet .psub{font-size:10pt;color:#555;margin:0 0 4mm}
+#printSheet .psvg{display:block;width:100%;height:auto;max-height:150mm;border:1px solid #ccc;border-radius:4mm}
+#printSheet .ptable{width:100%;border-collapse:collapse;margin-top:5mm;font-size:10pt;color:#000}
+#printSheet .ptable th,#printSheet .ptable td{border-bottom:1px solid #ccc;padding:2mm 3mm;text-align:left}
+#printSheet .ptable tr{break-inside:avoid}
+
+:root{
+  --md-sys-color-primary:var(--primary);--md-sys-color-on-primary:var(--on-primary);
+  --md-sys-color-primary-container:var(--primary-container);--md-sys-color-on-primary-container:var(--on-primary-container);
+  --md-sys-color-secondary-container:var(--secondary-container);--md-sys-color-on-secondary-container:var(--on-surface);
+  --md-sys-color-surface:var(--surface);--md-sys-color-on-surface:var(--on-surface);
+  --md-sys-color-surface-container:var(--surface-container);--md-sys-color-surface-container-high:var(--surface-container-high);
+  --md-sys-color-surface-container-highest:var(--surface-container-high);--md-sys-color-surface-container-lowest:var(--surface-container-lowest);
+  --md-sys-color-on-surface-variant:var(--on-surface-variant);--md-sys-color-outline:var(--outline);--md-sys-color-outline-variant:var(--outline-variant);
+  --md-sys-color-error:var(--error);--md-sys-color-on-error:var(--on-error);--md-sys-color-error-container:var(--error-container);--md-sys-color-on-error-container:var(--on-error-container);
+}
+:root{--on-error:#FFFFFF}
+@media (prefers-color-scheme:dark){:root{--on-error:#690005}}
+md-outlined-text-field,md-outlined-select{display:block;width:100%}
+[slot=actions]{display:flex;gap:8px;justify-content:flex-end;width:100%}
+
+/* Layout: computer (wide) and phone/tablet (narrow) */
+.app{max-width:1600px;margin:0 auto}
+.seat circle.hit{fill:transparent;stroke:none;animation:none}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;padding:10px;gap:12px}
+  .stage{order:-1}
+  .toolbar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .toolbar > *{flex:none}
+  header.top{padding:12px 16px}
+  header.top h1{font-size:19px}
+}
+@media (max-width:520px){
+  .grid2,.live{grid-template-columns:1fr}
+  .card{padding:12px;border-radius:20px}
+  .row>*{flex:1 1 100%}
+  .btn,md-filled-button,md-outlined-button,md-text-button,md-filled-tonal-button{min-height:40px}
+}
+@media (pointer:coarse){
+  .chip,.chipwrap .x{min-height:36px}
+}
+
+header.top{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 20px;background:var(--surface-container);box-shadow:0 1px 0 var(--outline-variant)}
+header.top .brand{min-width:0}
+header.top h1{margin:0;font-size:20px;font-weight:500}
+header.top p{margin:0;font-size:12px}
+header.top .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;flex:1 1 auto}
+@media (max-width:700px){
+  header.top{padding:8px 12px;position:sticky}
+  header.top .actions{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;width:100%;padding-bottom:2px}
+  header.top .actions > *{flex:none}
+  header.top #matStatus{display:none}
+}
+.algo{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--outline-variant);cursor:pointer}
+.algoText{display:block;font-size:14px;line-height:1.4}
+.algoList{max-height:50vh;overflow:auto;display:flex;flex-direction:column}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.meta{font-size:12px;color:var(--on-surface-variant)}
+.seatpick{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.seatlbl{font-size:12px;color:var(--on-surface-variant);width:100%}
+.stepper{display:inline-flex;align-items:center;gap:4px;background:var(--surface-container-lowest);border-radius:20px;padding:2px}
+.stepper .count{min-width:32px;text-align:center;font-weight:500;font-size:16px}
+.seat.pop circle:not(.hit){animation:popIn .5s cubic-bezier(.2,1.4,.4,1) both;transform-box:fill-box;transform-origin:center}
+@keyframes popIn{from{transform:scale(.3)}to{transform:scale(1)}}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid var(--outline-variant)}
+.tagchip{display:inline-flex;align-items:center;gap:2px;background:var(--secondary-container);border-radius:10px;padding:2px 2px 2px 8px;font-size:12px}
+.tagx{border:0;background:transparent;cursor:pointer;color:inherit;font-size:15px;padding:0 6px;line-height:1}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0}
+.tname{font-size:13px;font-weight:500;cursor:pointer;margin-right:4px}
+.tagchip{display:inline-flex;align-items:center;gap:2px;font-size:12px;padding:2px 4px 2px 9px;border-radius:12px;background:var(--secondary-container)}
+.tagx{border:0;background:transparent;cursor:pointer;color:inherit;font-size:15px;line-height:1;min-width:24px;min-height:24px;border-radius:12px;padding:0}
+.tagx:hover{background:rgba(0,0,0,.08)}
+.smallnote{font-size:12px;color:var(--on-surface-variant);line-height:1.5}
+</style>
+</head>
+<body>
+
+<header class="top no-print">
+  <div class="brand">
+    <h1>Seating Planner</h1>
+    <p id="matStatus" class="hint">Loading Material Web…</p>
+  </div>
+  <div class="actions">
+    <md-filled-button id="auto"><span slot="icon" class="ms">auto_awesome</span>Generate seating</md-filled-button>
+    <md-outlined-button id="genSettings"><span slot="icon" class="ms">tune</span>Limits</md-outlined-button>
+    <md-outlined-button id="algoBtn"><span slot="icon" class="ms">memory</span>Algorithms</md-outlined-button>
+    <md-outlined-button id="clear"><span slot="icon" class="ms">clear_all</span>Clear seats</md-outlined-button>
+    <md-filled-tonal-button id="dl"><span slot="icon" class="ms">download</span>Download</md-filled-tonal-button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="side">
+    <section class="card">
+      <h2>Students</h2>
+      <md-outlined-text-field id="names" type="textarea" rows="6" label="Student names" placeholder="Paste names, one per line (a spreadsheet column works too)"></md-outlined-text-field>
+      <div class="row"><md-filled-button id="addNames">Add pasted names</md-filled-button></div>
+      <div class="row">
+        <md-outlined-text-field label="Add one student" id="oneName" placeholder="Add one student" style="flex:1"></md-outlined-text-field>
+        <md-filled-tonal-button id="addOne">Add</md-filled-tonal-button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="hint" id="count"></span>
+        <md-text-button id="clearStudents">Remove all</md-text-button>
+      </div>
+      <div id="pool" class="pool"></div>
+    </section>
+
+    <section class="card">
+      <h2>Student needs</h2>
+      <p class="hint">Tags are shown on the seating plan. Only add what staff need for seating. Separate several tags with commas.</p>
+      <md-outlined-select label="Student" id="tagWho"></md-outlined-select>
+      <md-outlined-text-field label="Tags" id="tagText" list="tagSuggest" placeholder="e.g. ADHD, ASD, Hearing"></md-outlined-text-field>
+      <datalist id="tagSuggest">
+        <md-select-option value="ADHD"><div slot="headline"></div></md-select-option><md-select-option value="ASD"><div slot="headline"></div></md-select-option><md-select-option value="Hearing"><div slot="headline"></div></md-select-option>
+        <md-select-option value="Visual"><div slot="headline"></div></md-select-option><md-select-option value="Physical disability"><div slot="headline"></div></md-select-option><md-select-option value="Sensory needs"><div slot="headline"></div></md-select-option>
+        <md-select-option value="Anxiety"><div slot="headline"></div></md-select-option>
+      </datalist>
+      <div class="row"><md-filled-tonal-button id="tagSave">Save tags</md-filled-tonal-button></div>
+      <div id="tagged" class="tagged"></div>
+    </section>
+
+    <section class="card">
+      <h2>Seating rules</h2>
+      <p class="sub">Two students</p>
+      <div class="grid2">
+        <md-outlined-select label="Student" id="cA"></md-outlined-select>
+        <md-outlined-select label="Student" id="cB"></md-outlined-select>
+        <md-outlined-select label="Rule" id="cType"><md-select-option value="apart"><div slot="headline">Keep apart</div></md-select-option><md-select-option value="near"><div slot="headline">Sit near</div></md-select-option></md-outlined-select>
+        <md-outlined-select label="Seats" id="cN"><md-select-option value="1"><div slot="headline">1</div></md-select-option><md-select-option value="2" selected><div slot="headline">2</div></md-select-option><md-select-option value="3"><div slot="headline">3</div></md-select-option><md-select-option value="4"><div slot="headline">4</div></md-select-option><md-select-option value="5"><div slot="headline">5</div></md-select-option><md-select-option value="6"><div slot="headline">6</div></md-select-option></md-outlined-select>
+      </div>
+      <div><md-filled-tonal-button id="addRule">Add rule</md-filled-tonal-button></div>
+
+      <p class="sub">Placement</p>
+      <div class="grid2">
+        <md-outlined-select label="Apply to" id="pKind"><md-select-option value="name"><div slot="headline">One student</div></md-select-option><md-select-option value="tag"><div slot="headline">Everyone with a tag</div></md-select-option></md-outlined-select>
+        <md-outlined-select label="Who" id="pVal"></md-outlined-select>
+        <md-outlined-select label="Seat them" style="grid-column:1/3" id="pTarget">
+          <md-select-option value="front"><div slot="headline">Near front (close to whiteboard)</div></md-select-option>
+          <md-select-option value="back"><div slot="headline">Near back (far from whiteboard)</div></md-select-option>
+          <md-select-option value="teacher"><div slot="headline">Near teacher's desk</div></md-select-option>
+          <md-select-option value="sensory"><div slot="headline">Near sensory corner</div></md-select-option>
+        </md-outlined-select>
+        <md-outlined-select label="Within seats" id="pN"><md-select-option value="1"><div slot="headline">1</div></md-select-option><md-select-option value="2" selected><div slot="headline">2</div></md-select-option><md-select-option value="3"><div slot="headline">3</div></md-select-option><md-select-option value="4"><div slot="headline">4</div></md-select-option><md-select-option value="5"><div slot="headline">5</div></md-select-option><md-select-option value="6"><div slot="headline">6</div></md-select-option></md-outlined-select>
+      </div>
+      <div><md-filled-tonal-button id="addPlace">Add placement rule</md-filled-tonal-button></div>
+
+      <div id="rules" style="display:flex;flex-direction:column;gap:6px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Seating status</h2>
+      <div id="status" class="status"></div>
+      <p class="hint">Tip: click a student, then click a seat. Dragging also works. Drag a seated student back here to unseat them.</p>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div class="toolbar no-print">
+      <md-outlined-button data-add="table_rect"><span slot="icon" class="ms">add</span>Rectangle table</md-outlined-button>
+      <md-outlined-button data-add="table_round"><span slot="icon" class="ms">add</span>Round table</md-outlined-button>
+      <md-outlined-button data-add="window"><span slot="icon" class="ms">add</span>Wide window</md-outlined-button>
+      <md-outlined-button data-add="window_v"><span slot="icon" class="ms">add</span>Tall window</md-outlined-button>
+      <md-outlined-button data-add="whiteboard"><span slot="icon" class="ms">add</span>Whiteboard</md-outlined-button>
+      <md-outlined-button data-add="desk"><span slot="icon" class="ms">add</span>Teacher's desk</md-outlined-button>
+      <md-outlined-button data-add="sensory"><span slot="icon" class="ms">add</span>Sensory corner</md-outlined-button>
+      <md-outlined-button data-add="door"><span slot="icon" class="ms">add</span>Door</md-outlined-button>
+      <label class="chk"><md-checkbox id="snap"></md-checkbox> Snap to grid</label>
+      <md-outlined-select id="gridSize" label="Grid">
+        <md-select-option value="10"><div slot="headline">10 px grid</div></md-select-option><md-select-option value="20" selected><div slot="headline">20 px grid</div></md-select-option><md-select-option value="40"><div slot="headline">40 px grid</div></md-select-option>
+      </md-outlined-select>
+      <md-text-button id="reset">Reset room</md-text-button>
+    </div>
+
+    <svg id="room" class="print-area" viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Classroom layout"></svg>
+
+    <section class="card no-print">
+      <h2>Selected</h2>
+      <div id="inspector"></div>
+    </section>
+
+    <section class="card print-area">
+      <div class="row" style="justify-content:space-between">
+        <h2>Seating plan</h2>
+      </div>
+      <table>
+        <thead><tr><th>Student</th><th>Needs</th><th>Table</th><th>Seat</th></tr></thead>
+        <tbody id="planBody"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<div id="ghost" class="ghost" hidden></div>
+<div id="printSheet"></div>
+<md-dialog id="dlg"></md-dialog>
+<md-dialog id="loadDlg">
+  <div slot="headline">Generating seating</div>
+  <form slot="content" method="dialog" class="dlgbody">
+    <div class="live">
+      <svg id="liveRoom" viewBox="0 0 960 600" aria-label="Best seating so far"></svg>
+      <div><div class="runs" id="runs"></div></div>
+    </div>
+    <div class="bar"><span id="barFill"></span></div>
+    <p class="hint" id="busyDetail"></p>
+  </form>
+  <div slot="actions"><md-text-button id="cancelGen">Cancel</md-text-button></div>
+</md-dialog></div>
+<div id="toast" hidden></div>
+
+<script type="text/plain" id="solver">
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function createSolver(cfg) {
+  const rnd = mulberry32((cfg.seed >>> 0) || 1);
+  const S = {}; cfg.seats.forEach(s => S[s.id] = s);
+  const seatIds = cfg.seats.map(s => s.id), names = cfg.students, rules = cfg.rules, U = cfg.unit;
+  const dd = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+  const rd = (p, t) => Math.hypot(Math.max(t.x - p.x, 0, p.x - (t.x + t.w)), Math.max(t.y - p.y, 0, p.y - (t.y + t.h)));
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd() * (i + 1) | 0; const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+
+  // How far a rule is from being met (0 = met)
+  function viol(r, A) {
+    if (r.kind === 'pair') {
+      const a = A[r.a], b = A[r.b];
+      if (!a || !b) return 0;
+      const d = Math.round(dd(S[a], S[b]) / U);
+      return r.type === 'apart' ? Math.max(0, r.n - d) : Math.max(0, d - r.n);
+    }
+    if (!r.tg) return r.members.some(n => A[n]) ? 50 : 0;
+    let v = 0;
+    for (const n of r.members) {
+      const sid = A[n]; if (!sid) continue;
+      const p = S[sid];
+      const x = r.target === 'back' ? Math.round((r.far - rd(p, r.tg)) / U) : Math.round(rd(p, r.tg) / U);
+      v += Math.max(0, x - r.n);
+    }
+    return v;
+  }
+  const cost = A => { let c = 0; for (const r of rules) c += viol(r, A); return c; };
+  const badRules = A => rules.filter(r => viol(r, A) > 0);
+
+  function seatInit() {
+    const A = {}; const pool = shuffle(seatIds.slice());
+    shuffle(names.slice()).slice(0, pool.length).forEach((n, i) => A[n] = pool[i]);
+    return A;
+  }
+  // One local-search move: move a student (usually one in a broken rule) to a random seat, swapping if occupied.
+  function move(A, c, T) {
+    if (!seatIds.length) return c;
+    let who;
+    if (c > 0 && rnd() < 0.8) {
+      const bad = badRules(A); const r = bad[rnd() * bad.length | 0];
+      const cand = r.members.filter(n => A[n]);
+      if (cand.length) who = cand[rnd() * cand.length | 0];
+    }
+    if (who === undefined) { const seated = Object.keys(A); if (!seated.length) return c; who = seated[rnd() * seated.length | 0]; }
+    const to = seatIds[rnd() * seatIds.length | 0], from = A[who];
+    if (to === from) return c;
+    let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+    A[who] = to; if (occ !== null) A[occ] = from;
+    const nc = cost(A);
+    if (nc <= c || (T > 0 && rnd() < Math.exp(-(nc - c) / T))) return nc;
+    A[who] = from; if (occ !== null) A[occ] = to;
+    return c;
+  }
+
+  // Strategy 1: random restarts with hill climbing
+  function restart() {
+    const A = seatInit(); let c = cost(A);
+    for (let i = 0; i < cfg.steps && c > 0; i++) c = move(A, c, 0);
+    return { c, A };
+  }
+  // Strategy 2: simulated annealing (sometimes accepts worse moves to escape traps)
+  function anneal() {
+    const A = seatInit(); let c = cost(A), bc = c, bA = { ...A };
+    const N = cfg.steps * 4;
+    for (let i = 0; i < N && c > 0; i++) {
+      const T = 2 * (1 - i / N) + 0.05;
+      c = move(A, c, T);
+      if (c < bc) { bc = c; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 3: greedy placement (most-constrained students first, each into the seat that hurts least), then repair
+  function greedy() {
+    const deg = {}; rules.forEach(r => r.members.forEach(n => deg[n] = (deg[n] || 0) + 1));
+    const order = shuffle(names.slice()).sort((x, y) => (deg[y] || 0) - (deg[x] || 0));
+    const A = {}; let free = shuffle(seatIds.slice());
+    for (const n of order) {
+      if (!free.length) break;
+      let bi = 0, bv = Infinity;
+      free.forEach((s, i) => { const v = cost({ ...A, [n]: s }); if (v < bv) { bv = v; bi = i; } });
+      A[n] = free[bi]; free.splice(bi, 1);
+    }
+    let c = cost(A);
+    for (let i = 0; i < cfg.steps / 2 && c > 0; i++) c = move(A, c, 0);
+    return { c, A };
+  }
+
+  // Strategy 4: tabu search. Always makes the best allowed swap; recently undone moves are banned for a while.
+  function tabu() {
+    const A = seatInit(); let c = cost(A), bc = c, bA = { ...A };
+    const banUntil = {};
+    for (let it = 0; it < Math.min(cfg.steps, 400) && c > 0; it++) {
+      const cand = new Set();
+      badRules(A).forEach(r => r.members.forEach(n => A[n] && cand.add(n)));
+      let move = null, bestVal = Infinity;
+      for (const who of cand) {
+        const from = A[who];
+        for (const to of seatIds) {
+          if (to === from) continue;
+          let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+          A[who] = to; if (occ !== null) A[occ] = from;
+          const nc = cost(A);
+          A[who] = from; if (occ !== null) A[occ] = to;
+          const banned = (banUntil[who + '|' + to] || 0) > it;
+          if ((!banned || nc < bc) && nc < bestVal) { bestVal = nc; move = { who, from, to, occ }; }
+        }
+      }
+      if (!move) break;
+      A[move.who] = move.to; if (move.occ !== null) A[move.occ] = move.from;
+      banUntil[move.who + '|' + move.from] = it + 7;
+      c = bestVal;
+      if (c < bc) { bc = c; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 5: genetic algorithm. Keeps a population, breeds the fittest layouts, and mutates them.
+  function genetic() {
+    const POP = 16, GENS = Math.max(20, Math.floor(cfg.steps / 40));
+    let pop = Array.from({ length: POP }, () => { const A = seatInit(); return { A, c: cost(A) }; });
+    let best = pop.reduce((a, b) => (b.c < a.c ? b : a));
+    let bc = best.c, bA = { ...best.A };
+    const pick = () => { const a = pop[rnd() * POP | 0], b = pop[rnd() * POP | 0]; return a.c <= b.c ? a : b; };
+    const cross = (P, Q) => {
+      const C = {}, used = new Set();
+      for (const n of shuffle(names.slice())) {
+        const opts = [P.A[n], Q.A[n]].filter(x => x && !used.has(x));
+        let s = opts.length ? opts[rnd() * opts.length | 0] : null;
+        if (!s) { const free = seatIds.filter(x => !used.has(x)); if (!free.length) break; s = free[rnd() * free.length | 0]; }
+        C[n] = s; used.add(s);
+      }
+      return C;
+    };
+    for (let g = 0; g < GENS && bc > 0; g++) {
+      const next = [{ A: { ...best.A }, c: best.c }];
+      while (next.length < POP) {
+        const C = cross(pick(), pick());
+        const keys = Object.keys(C);
+        if (keys.length && rnd() < 0.5) {            // mutation: move one student to a random seat
+          const who = keys[rnd() * keys.length | 0], to = seatIds[rnd() * seatIds.length | 0], from = C[who];
+          if (to !== from) {
+            let occ = null; for (const n in C) if (C[n] === to) { occ = n; break; }
+            C[who] = to; if (occ !== null) C[occ] = from;
+          }
+        }
+        next.push({ A: C, c: cost(C) });
+      }
+      pop = next;
+      best = pop.reduce((a, b) => (b.c < a.c ? b : a));
+      if (best.c < bc) { bc = best.c; bA = { ...best.A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 6: min-conflicts. Takes a student from a broken rule and moves them to the seat that breaks least.
+  function minConflicts() {
+    const A = seatInit(); let c = cost(A), bc = c, bA = { ...A };
+    for (let it = 0; it < cfg.steps && c > 0; it++) {
+      const bad = badRules(A);
+      const cand = bad[rnd() * bad.length | 0].members.filter(n => A[n]);
+      if (!cand.length) continue;
+      const who = cand[rnd() * cand.length | 0], from = A[who];
+      let to = null, bestVal = Infinity;
+      for (const sid of seatIds) {
+        if (sid === from) continue;
+        let occ = null; for (const n in A) if (A[n] === sid) { occ = n; break; }
+        A[who] = sid; if (occ !== null) A[occ] = from;
+        const v = cost(A);
+        A[who] = from; if (occ !== null) A[occ] = sid;
+        if (v < bestVal || (v === bestVal && rnd() < 0.5)) { bestVal = v; to = sid; }
+      }
+      if (to !== null && (bestVal <= c || rnd() < 0.1)) {
+        let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+        A[who] = to; if (occ !== null) A[occ] = from;
+        c = bestVal;
+      }
+      if (c < bc) { bc = c; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 7: WalkSAT. Usually the best move for a broken rule, sometimes a random one to escape traps.
+  function walksat() {
+    const A = seatInit(); let c = cost(A), bc = c, bA = { ...A };
+    for (let it = 0; it < cfg.steps && c > 0; it++) {
+      const bad = badRules(A);
+      const cand = bad[rnd() * bad.length | 0].members.filter(n => A[n]);
+      if (!cand.length) continue;
+      const who = cand[rnd() * cand.length | 0], from = A[who];
+      let to = from;
+      if (rnd() < 0.3) to = seatIds[rnd() * seatIds.length | 0];
+      else {
+        let bv = Infinity;
+        for (const sid of seatIds) {
+          if (sid === from) continue;
+          let occ = null; for (const n in A) if (A[n] === sid) { occ = n; break; }
+          A[who] = sid; if (occ !== null) A[occ] = from;
+          const v = cost(A);
+          A[who] = from; if (occ !== null) A[occ] = sid;
+          if (v < bv) { bv = v; to = sid; }
+        }
+      }
+      if (to !== from) {
+        let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+        A[who] = to; if (occ !== null) A[occ] = from;
+        c = cost(A);
+      }
+      if (c < bc) { bc = c; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 8: beam search. Keeps the best few layouts at each depth and expands each one.
+  function beam() {
+    const K = 8, D = Math.max(10, Math.floor(cfg.steps / 100));
+    const key = A => names.map(n => A[n] || '').join('|');
+    let states = Array.from({ length: K }, () => { const A = seatInit(); return { A, c: cost(A) }; });
+    let gbest = states.reduce((a, b) => (b.c < a.c ? b : a));
+    for (let d = 0; d < D && gbest.c > 0; d++) {
+      const pool = [];
+      for (const st of states) for (let k = 0; k < 20; k++) {
+        const A = { ...st.A };
+        const bad = badRules(A);
+        const cand = bad.length ? bad[rnd() * bad.length | 0].members.filter(n => A[n]) : Object.keys(A);
+        if (!cand.length) continue;
+        const who = cand[rnd() * cand.length | 0], to = seatIds[rnd() * seatIds.length | 0], from = A[who];
+        if (to === from) continue;
+        let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+        A[who] = to; if (occ !== null) A[occ] = from;
+        pool.push({ A, c: cost(A) });
+      }
+      const seen = new Set(), next = [];
+      for (const p of pool.sort((a, b) => a.c - b.c)) {
+        const k = key(p.A); if (seen.has(k)) continue;
+        seen.add(k); next.push(p); if (next.length === K) break;
+      }
+      if (next.length) states = next;
+      const top = states.reduce((a, b) => (b.c < a.c ? b : a));
+      if (top.c < gbest.c) gbest = top;
+    }
+    return { c: gbest.c, A: { ...gbest.A } };
+  }
+  // Strategy 9: late acceptance hill climbing. Accepts a move if it beats the cost from a while ago, so it can climb out of traps.
+  function lahc() {
+    const L = 40, A = seatInit(); let c = cost(A), bc = c, bA = { ...A };
+    const hist = new Array(L).fill(c);
+    for (let it = 0; it < cfg.steps && c > 0; it++) {
+      const bad = badRules(A);
+      const cand = bad[rnd() * bad.length | 0].members.filter(n => A[n]);
+      if (cand.length) {
+        const who = cand[rnd() * cand.length | 0], to = seatIds[rnd() * seatIds.length | 0], from = A[who];
+        if (to !== from) {
+          let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+          A[who] = to; if (occ !== null) A[occ] = from;
+          const nc = cost(A);
+          if (nc <= c || nc <= hist[it % L]) c = nc;
+          else { A[who] = from; if (occ !== null) A[occ] = to; }
+        }
+      }
+      hist[it % L] = c;
+      if (c < bc) { bc = c; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 10: iterated local search. Improves a layout, shakes it up a little, and improves again.
+  function ils() {
+    const climb = (A, n) => { let c = cost(A); for (let i = 0; i < n && c > 0; i++) c = move(A, c, 0); return c; };
+    const start = seatInit(); climb(start, Math.floor(cfg.steps / 4));
+    let bc = cost(start), bA = { ...start };
+    for (let k = 0; k < 12 && bc > 0; k++) {
+      const A = { ...bA };
+      for (let j = 0; j < 3; j++) {
+        const who = Object.keys(A)[rnd() * Object.keys(A).length | 0], to = seatIds[rnd() * seatIds.length | 0], from = A[who];
+        if (!who || to === from) continue;
+        let occ = null; for (const n in A) if (A[n] === to) { occ = n; break; }
+        A[who] = to; if (occ !== null) A[occ] = from;
+      }
+      const c2 = climb(A, Math.floor(cfg.steps / 8));
+      if (c2 < bc) { bc = c2; bA = { ...A }; }
+    }
+    return { c: bc, A: bA };
+  }
+  // Strategy 11: random sampling. Pure random seatings, a baseline to compare the others against.
+  function randomSample() { const A = seatInit(); return { c: cost(A), A }; }
+  // Strategy 12: bogosort. Shuffle everyone at random, check the rules, and repeat until they happen to hold.
+  function bogo() {
+    let bc = Infinity, bA = null;
+    for (let i = 0; i < cfg.steps && bc > 0; i++) {
+      const A = seatInit(), c = cost(A);
+      if (c < bc) { bc = c; bA = A; }
+    }
+    return { c: bc, A: bA };
+  }
+  const STRATEGIES = { restart, anneal, greedy, tabu, genetic, minconf: minConflicts, walksat, beam, lahc, ils, random: randomSample, bogo };
+
+  let tries = 0, bestCost = Infinity, bestA = null;
+  function step() {
+    tries++;
+    const r = (STRATEGIES[cfg.strategy] || restart)();
+    let improved = false;
+    if (r.c < bestCost) { bestCost = r.c; bestA = { ...r.A }; improved = true; }
+    return { tries, bestCost, bestA, improved };
+  }
+  return { step };
+}
+
+// Worker entry point (only runs when loaded as a Web Worker)
+if (typeof importScripts === 'function') {
+  let stopped = false;
+  self.onmessage = async e => {
+    const m = e.data;
+    if (m.cmd === 'stop') { stopped = true; return; }
+    if (m.cmd !== 'start') return;
+    const cfg = m.cfg, solver = createSolver(cfg);
+    let r = null, last = 0;
+    while (!stopped) {
+      r = solver.step();
+      if (r.improved || Date.now() - last > 250) { last = Date.now(); postMessage({ type: 'progress', tries: r.tries, bestCost: r.bestCost, bestA: r.bestA }); }
+      if (r.bestCost === 0 || r.tries >= cfg.maxTries || Date.now() >= cfg.deadline) break;
+      await new Promise(res => setTimeout(res, 0));
+    }
+    postMessage({ type: 'done', tries: r ? r.tries : 0, bestCost: r ? r.bestCost : Infinity, bestA: r ? r.bestA : null });
+  };
+}
+</script>
+<script>
+function boot() {
+const $ = q => document.querySelector(q);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+const W = 960, H = 600;
+let UNIT = 40;
+const room = $('#room');
+const LABELS = { whiteboard: 'Whiteboard', desk: "Teacher's desk", door: 'Door', sensory: 'Sensory corner' };
+const TYPES = {
+  table_rect:  { type: 'table', w: 220, h: 70, seats: 6, shape: 'rect' },
+  table_round: { type: 'table', w: 96, h: 96, seats: 6, shape: 'round' },
+  window:      { type: 'window', w: 150, h: 16 },
+  window_v:    { type: 'window', w: 16, h: 150 },
+  whiteboard:  { type: 'whiteboard', w: 240, h: 18 },
+  desk:        { type: 'desk', w: 120, h: 52 },
+  sensory:     { type: 'sensory', w: 150, h: 110 },
+  door:        { type: 'door', w: 60, h: 16 }
+};
+const TARGET_TEXT = { front: 'near front', back: 'near back', teacher: "near teacher's desk", sensory: 'near sensory corner' };
+
+let items = [], nid = 1, tcount = 0;
+let students = [], tags = {}, seatOf = {}, studentAt = {}, rules = [];
+let sel = null, pending = null, press = null;
+let snapOn = false, gridSize = 20;
+// Each algorithm's typical load and speed (rough guides, not measurements)
+const ALGOS = [
+  { id: 'restart', name: 'Random restarts', desc: 'Starts many random seatings and improves each one with swaps. Simple and dependable.', cpu: 'Light', speed: 'Fast' },
+  { id: 'anneal', name: 'Simulated annealing', desc: 'Makes swaps and sometimes accepts a worse one early on, so it can escape stuck layouts.', cpu: 'Medium', speed: 'Medium' },
+  { id: 'greedy', name: 'Greedy + repair', desc: 'Places the most-constrained students first, each where they break the fewest rules, then repairs what is left.', cpu: 'Light', speed: 'Fast' },
+  { id: 'tabu', name: 'Tabu search', desc: 'Always takes the best swap it can, and bans recently undone moves so it does not loop.', cpu: 'Heavy', speed: 'Medium' },
+  { id: 'genetic', name: 'Genetic algorithm', desc: 'Breeds and mutates a population of seatings over generations, keeping the fittest.', cpu: 'Medium', speed: 'Slow' },
+  { id: 'minconf', name: 'Min-conflicts', desc: 'Moves a student from a broken rule to the seat that breaks the fewest rules.', cpu: 'Light', speed: 'Fast' },
+  { id: 'walksat', name: 'WalkSAT', desc: 'Mostly picks the best move for a broken rule, with occasional random moves to break out of traps.', cpu: 'Light', speed: 'Fast' },
+  { id: 'beam', name: 'Beam search', desc: 'Keeps the best few layouts at each step and expands them. Thorough but heavy.', cpu: 'Heavy', speed: 'Slow' },
+  { id: 'lahc', name: 'Late acceptance', desc: 'Accepts a move if it beats the cost from a while ago, so it can climb out of traps.', cpu: 'Light', speed: 'Medium' },
+  { id: 'ils', name: 'Iterated local search', desc: 'Improves a layout, shakes it up a little, and improves it again.', cpu: 'Medium', speed: 'Medium' },
+  { id: 'random', name: 'Random sampling', desc: 'Pure random seatings. A baseline to compare the others against.', cpu: 'Light', speed: 'Fast' },
+  { id: 'bogo', name: 'Bogosort', desc: 'Shuffles everyone at random, checks the rules, and repeats until they happen to hold. Only practical for very small classes with very few rules.', cpu: 'Medium', speed: 'Very slow' }
+];
+const PRESETS = {
+  quick: ['greedy', 'minconf', 'walksat', 'random'],
+  balanced: ['restart', 'anneal', 'greedy', 'tabu', 'minconf', 'lahc'],
+  all: ALGOS.map(a => a.id)
+};
+let chosenAlgos = new Set(PRESETS.balanced);
+
+/* ---------- Room model ---------- */
+function addItem(key, x = 400, y = 260) {
+  const it = { id: 'i' + nid++, ...TYPES[key], x, y, rot: 0 };
+  if (it.type === 'table') it.n = ++tcount;
+  items.push(it);
+  return it;
+}
+function seed() {
+  items = []; tcount = 0; sel = null;
+  addItem('whiteboard', 330, 22);
+  addItem('desk', 760, 22);
+  addItem('window_v', 0, 200);
+  addItem('window_v', W - 16, 200);
+  addItem('window', 200, H - 16);
+  addItem('window', 600, H - 16);
+  addItem('sensory', 800, 360);
+  for (const r of [150, 370]) for (const c of [40, 300, 560]) addItem('table_rect', c, r);
+}
+const tables = () => items.filter(i => i.type === 'table');
+function seatPositions(t) {
+  const n = t.seats, out = [];
+  if (t.shape === 'round') {
+    const cx = t.x + t.w / 2, cy = t.y + t.h / 2, r = t.w / 2 + 26;
+    for (let k = 0; k < n; k++) { const a = -Math.PI / 2 + 2 * Math.PI * k / n; out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+  } else {
+    const top = Math.ceil(n / 2), bot = n - top;
+    for (let k = 0; k < top; k++) out.push([t.x + t.w * (k + 1) / (top + 1), t.y - 26]);
+    for (let k = 0; k < bot; k++) out.push([t.x + t.w * (k + 1) / (bot + 1), t.y + t.h + 26]);
+  }
+  const a = (t.rot || 0) * Math.PI / 180, cx = t.x + t.w / 2, cy = t.y + t.h / 2, cs = Math.cos(a), sn = Math.sin(a);
+  return out.map((p, k) => {
+    const dx = p[0] - cx, dy = p[1] - cy;
+    return { id: t.id + ':' + k, x: cx + dx * cs - dy * sn, y: cy + dx * sn + dy * cs };
+  });
+}
+const allSeats = () => tables().flatMap(seatPositions);
+const seatMap = () => Object.fromEntries(allSeats().map(s => [s.id, s]));
+const center = it => ({ x: it.x + it.w / 2, y: it.y + it.h / 2 });
+const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+const firstOf = type => items.find(i => i.type === type);
+// Distance from a seat to the nearest edge of a room item (0 if the seat is touching it)
+const rectDist = (p, t) => Math.hypot(Math.max(t.x - p.x, 0, p.x - (t.x + t.w)), Math.max(t.y - p.y, 0, p.y - (t.y + t.h)));
+// One "seat" = the real gap between two seats at a table, so rules count seats, not pixels
+function seatUnit() {
+  let best = Infinity;
+  for (const t of tables()) {
+    const p = seatPositions(t);
+    for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) best = Math.min(best, dist(p[i], p[j]));
+    if (best < Infinity) break;
+  }
+  return best < Infinity ? Math.max(20, best) : 40;
+}
+const snapV = v => snapOn ? Math.round(v / gridSize) * gridSize : v;
+const snapSize = v => snapOn ? Math.max(gridSize, Math.round(v / gridSize) * gridSize) : v;
+function placeCenter(it, cx, cy) {
+  cx = snapV(cx); cy = snapV(cy);
+  const a = (it.rot || 0) * Math.PI / 180;
+  const vw = Math.abs(it.w * Math.cos(a)) + Math.abs(it.h * Math.sin(a));
+  const vh = Math.abs(it.w * Math.sin(a)) + Math.abs(it.h * Math.cos(a));
+  cx = clamp(cx, vw / 2, W - vw / 2); cy = clamp(cy, vh / 2, H - vh / 2);
+  it.x = cx - it.w / 2; it.y = cy - it.h / 2;
+}
+function rotateItem(it, deg) {
+  const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+  it.rot = (((it.rot || 0) + deg) % 360 + 360) % 360;
+  placeCenter(it, cx, cy);
+}
+
+/* ---------- Seat bookkeeping (keyed by student name) ---------- */
+function unsetSeat(seat) {
+  const who = studentAt[seat];
+  if (who !== undefined) { delete seatOf[who]; delete studentAt[seat]; }
+}
+function putSeat(who, seat) {
+  unsetSeat(seat);
+  if (seatOf[who]) unsetSeat(seatOf[who]);
+  studentAt[seat] = who; seatOf[who] = seat;
+}
+function swapSeats(a, b) {
+  const x = studentAt[a], y = studentAt[b];
+  unsetSeat(a); unsetSeat(b);
+  if (y !== undefined) putSeat(y, a);
+  if (x !== undefined) putSeat(x, b);
+}
+function prune() {
+  const ids = new Set(allSeats().map(s => s.id));
+  for (const s of Object.keys(studentAt)) if (!ids.has(s)) unsetSeat(s);
+}
+
+/* ---------- Rules ---------- */
+// pair rule:  {kind:'pair', a, b, type:'apart'|'near', n}
+// place rule: {kind:'place', by:'name'|'tag', val, target:'front'|'back'|'teacher'|'sensory', n}
+function membersOf(r) {
+  if (r.kind === 'pair') return [r.a, r.b];
+  if (r.by === 'name') return [r.val];
+  return students.filter(s => (tags[s] || []).includes(r.val));
+}
+function ruleText(r) {
+  if (r.kind === 'pair') return `${r.a} and ${r.b}: ${r.type === 'apart' ? 'keep apart, at least' : 'sit near, at most'} ${r.n} seat${r.n > 1 ? 's' : ''}`;
+  const who = r.by === 'tag' ? `Tagged "${r.val}"` : r.val;
+  return `${who}: ${TARGET_TEXT[r.target]}, within ${r.n} seat${r.n > 1 ? 's' : ''}`;
+}
+function brokenRule(r, S) {
+  if (r.kind === 'pair') {
+    const a = seatOf[r.a], b = seatOf[r.b];
+    if (!a || !b || !S[a] || !S[b]) return false;
+    const d = Math.round(dist(S[a], S[b]) / UNIT);
+    return r.type === 'apart' ? d < r.n : d > r.n;
+  }
+  const wb = firstOf('whiteboard');
+  const targetItem = r.target === 'teacher' ? firstOf('desk') : r.target === 'sensory' ? firstOf('sensory') : wb;
+  if (!targetItem) return membersOf(r).length > 0;     // missing item means the rule can't be met
+  const tg = targetItem;
+  const seatsOfMembers = membersOf(r).map(n => seatOf[n]).filter(Boolean).map(id => S[id]).filter(Boolean);
+  if (!seatsOfMembers.length) return false;
+  let farthest = 0;
+  if (r.target === 'back') Object.values(S).forEach(s => farthest = Math.max(farthest, rectDist(s, tg)));
+  return seatsOfMembers.some(p => {
+    if (r.target === 'back') return Math.round((farthest - rectDist(p, tg)) / UNIT) > r.n;
+    return Math.round(rectDist(p, tg) / UNIT) > r.n;
+  });
+}
+function brokenRules() { const S = seatMap(); return rules.filter(r => brokenRule(r, S)); }
+function missingItems() {
+  const need = [];
+  if (rules.some(r => r.kind === 'place' && r.target !== 'sensory' && r.target !== 'teacher') && !firstOf('whiteboard')) need.push('a whiteboard');
+  if (rules.some(r => r.kind === 'place' && r.target === 'teacher') && !firstOf('desk')) need.push("a teacher's desk");
+  if (rules.some(r => r.kind === 'place' && r.target === 'sensory') && !firstOf('sensory')) need.push('a sensory corner');
+  return need;
+}
+
+const tick = () => new Promise(r => setTimeout(r, 0));
+const cfg = { tries: 500, seconds: 8 };
+const parseLim = (v, min, max) => { const t = String(v).trim().toLowerCase(); if (['∞','inf','infinity','unlimited','none'].includes(t)) return Infinity; const n = Number(t); return Number.isInteger(n) && n >= min && n <= max ? n : NaN; };
+const fmtLim = (v, unit) => v === Infinity ? '∞' : v + unit;
+
+function showToast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => t.hidden = true, 3200);
+}
+async function ask({ title, body, buttons }) {
+  const d = $('#dlg');
+  // If the previous dialog is still closing, wait for it to finish before opening this one
+  if (d.open) await new Promise(r => setTimeout(r, 450));
+  d.innerHTML = `<div slot="headline">${title}</div><div slot="content" class="dlgbody">${body}</div><div slot="actions" class="dlgact"></div>`;
+  const row = d.querySelector('.dlgact');
+  return new Promise(res => {
+    buttons.forEach(b => {
+      const tag = b.cls === 'filled' ? 'md-filled-button' : b.cls === 'tonal' ? 'md-filled-tonal-button' : b.cls === 'outlined' ? 'md-outlined-button' : 'md-text-button';
+      const el = document.createElement(tag);
+      el.textContent = b.label;
+      el.onclick = () => { d.onclose = null; res(b.value); d.close(); };
+      row.appendChild(el);
+    });
+    d.onclose = () => res(null);
+    d.show();
+  });
+}
+const snapshot = () => ({ seatOf: { ...seatOf }, studentAt: { ...studentAt } });
+const restore = snap => { seatOf = { ...snap.seatOf }; studentAt = { ...snap.studentAt }; };
+
+/* Limits dialog */
+function openLimits() {
+  const d = $('#dlg');
+  d.innerHTML = `<div slot="headline">Generation limits</div>
+    <div slot="content" class="dlgbody">
+      <div class="grid2">
+        <md-outlined-text-field id="sTries" label="Maximum tries" value="${fmtLim(cfg.tries, '')}"></md-outlined-text-field>
+        <md-outlined-text-field id="sTime" label="Timeout (seconds)" value="${fmtLim(cfg.seconds, '')}"></md-outlined-text-field>
+      </div>
+      <p class="hint">Generating stops at whichever limit is reached first. Type ∞ to remove a limit.</p>
+      <p class="warn" id="sErr" hidden></p>
+    </div>
+    <div slot="actions" class="dlgact"><md-text-button id="sCancel">Cancel</md-text-button><md-filled-button id="sSave">Save</md-filled-button></div>`;
+  $('#sCancel').onclick = () => d.close();
+  $('#sSave').onclick = () => {
+    const tries = parseLim($('#sTries').value, 1, 1e9), secs = parseLim($('#sTime').value, 1, 1e6);
+    const bad = isNaN(tries) ? 'Tries must be a whole number of 1 or more, or ∞ for no limit.'
+      : isNaN(secs) ? 'Timeout must be a whole number of seconds, or ∞ for no limit.' : '';
+    if (bad) { $('#sErr').textContent = bad; $('#sErr').hidden = false; return; }
+    cfg.tries = tries; cfg.seconds = secs;
+    d.close();
+    showToast(`Limits saved: ${fmtLim(tries, '')} tries, ${fmtLim(secs, ' s')}.`);
+  };
+  d.show();
+}
+$('#genSettings').onclick = openLimits;
+function openAlgos() {
+  const d = $('#dlg');
+  const rows = ALGOS.map(a => `<label class="algo">
+      <md-checkbox data-algo="${a.id}" ${chosenAlgos.has(a.id) ? 'checked' : ''}></md-checkbox>
+      <span class="algoText"><b>${esc(a.name)}</b> <span class="meta">CPU: ${a.cpu} · Speed: ${a.speed}</span><br><span class="hint">${esc(a.desc)}</span></span>
+    </label>`).join('');
+  d.innerHTML = `<div slot="headline">Choose algorithms</div>
+    <div slot="content" class="dlgbody">
+      <p class="hint">Each algorithm runs in its own worker. More algorithms find a solution more often, but use more of your device. CPU is how heavy an algorithm is. Speed is how quickly it usually finds an answer.</p>
+      <div class="presets">
+        <md-text-button data-preset="quick">Quick</md-text-button>
+        <md-text-button data-preset="balanced">Balanced</md-text-button>
+        <md-text-button data-preset="all">All</md-text-button>
+      </div>
+      <div class="algoList">${rows}</div>
+      <p class="hint" id="algoSum"></p>
+    </div>
+    <div slot="actions" class="dlgact"><md-text-button id="aCancel">Cancel</md-text-button><md-filled-button id="aSave">Use these</md-filled-button></div>`;
+  const boxes = () => [...d.querySelectorAll('md-checkbox[data-algo]')];
+  const weight = { Light: 1, Medium: 2, Heavy: 3 };
+  const sum = () => {
+    const on = boxes().filter(b => b.checked);
+    const load = on.reduce((t, b) => t + weight[ALGOS.find(x => x.id === b.dataset.algo).cpu], 0);
+    $('#algoSum').textContent = on.length
+      ? `${on.length} selected · overall CPU load ${load <= 4 ? 'light' : load <= 9 ? 'medium' : 'heavy'}`
+      : 'Select at least one algorithm.';
+  };
+  boxes().forEach(b => b.addEventListener('change', sum));
+  d.querySelectorAll('[data-preset]').forEach(p => p.onclick = () => {
+    const set = PRESETS[p.dataset.preset];
+    boxes().forEach(b => b.checked = set.includes(b.dataset.algo));
+    sum();
+  });
+  $('#aCancel').onclick = () => d.close();
+  $('#aSave').onclick = () => {
+    const on = boxes().filter(b => b.checked).map(b => b.dataset.algo);
+    if (!on.length) { sum(); return; }
+    chosenAlgos = new Set(on);
+    d.close();
+    showToast(`${on.length} algorithm${on.length > 1 ? 's' : ''} selected.`);
+  };
+  sum();
+  d.show();
+}
+$('#algoBtn').onclick = openAlgos;
+
+/* Generate: several algorithms run in parallel (Web Workers when available) and stop when all rules are met, a limit is hit, or the user cancels. */
+function buildCfg() {
+  const seats = allSeats().map(s => ({ id: s.id, x: s.x, y: s.y }));
+  const wb = firstOf('whiteboard'), desk = firstOf('desk'), sens = firstOf('sensory');
+  UNIT = seatUnit();
+  const far = wb && seats.length ? Math.max(...seats.map(p => rectDist(p, wb))) : 0;
+  const rs = rules.map(r => {
+    if (r.kind === 'pair') return { kind: 'pair', a: r.a, b: r.b, type: r.type, n: r.n, members: [r.a, r.b], text: ruleText(r) };
+    const item = r.target === 'teacher' ? desk : r.target === 'sensory' ? sens : wb;
+    return { kind: 'place', target: r.target, n: r.n, members: membersOf(r), tg: item ? { x: item.x, y: item.y, w: item.w, h: item.h } : null, far, text: ruleText(r) };
+  });
+  return { seats, students: students.slice(), rules: rs, unit: UNIT };
+}
+function startLocal(c, onMsg, onDone) {
+  const make = new Function(document.getElementById('solver').textContent + '\n;return createSolver;')();
+  const S = make(c);
+  let stopped = false;
+  const loop = () => {
+    if (stopped) return;
+    const t0 = performance.now(); let r;
+    do { r = S.step(); } while (performance.now() - t0 < 12 && r.bestCost > 0 && r.tries < c.maxTries && Date.now() < c.deadline);
+    onMsg({ type: 'progress', tries: r.tries, bestCost: r.bestCost, bestA: r.bestA });
+    if (r.bestCost === 0 || r.tries >= c.maxTries || Date.now() >= c.deadline) { onDone({ type: 'done', tries: r.tries, bestCost: r.bestCost, bestA: r.bestA }); return; }
+    setTimeout(loop, 0);
+  };
+  loop();
+  return { mode: 'main', stop() { stopped = true; }, kill() { stopped = true; } };
+}
+function startRunner(c, onMsg, onDone) {
+  if (typeof Worker !== 'undefined') {
+    let got = false, fallback = null, w = null;
+    try {
+      const url = URL.createObjectURL(new Blob([document.getElementById('solver').textContent], { type: 'text/javascript' }));
+      w = new Worker(url);
+      w.onmessage = e => { got = true; if (e.data.type === 'done') { w.terminate(); onDone(e.data); } else onMsg(e.data); };
+      w.onerror = () => {
+        if (got || fallback) return;
+        try { w.terminate(); } catch (_) {}
+        fallback = startLocal(c, onMsg, onDone);
+      };
+      w.postMessage({ cmd: 'start', cfg: c });
+      return {
+        mode: 'worker',
+        stop() { if (fallback) fallback.stop(); else w.postMessage({ cmd: 'stop' }); },
+        kill() { if (fallback) fallback.kill(); else try { w.terminate(); } catch (_) {} }
+      };
+    } catch (err) { /* fall through to the main thread */ }
+  }
+  return startLocal(c, onMsg, onDone);
+}
+const CHECK_MS = 4000;
+// Exact but budgeted search: can every student get a seat that satisfies every rule at once?
+function* feasibility(base) {
+  const U = base.unit, seats = base.seats, S = {};
+  seats.forEach(s => S[s.id] = s);
+  const dd = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+  const rd = (p, t) => Math.hypot(Math.max(t.x - p.x, 0, p.x - (t.x + t.w)), Math.max(t.y - p.y, 0, p.y - (t.y + t.h)));
+  if (!base.students.length) return { status: 'ok' };
+  if (base.students.length > seats.length)
+    return { status: 'impossible', why: `There are ${base.students.length} students but only ${seats.length} seats. Add tables or remove students.` };
+
+  // Step 1: single-student rules shrink each student's list of allowed seats
+  const dom = {};
+  base.students.forEach(n => dom[n] = seats.map(s => s.id));
+  const pairs = [];
+  for (const r of base.rules) {
+    if (r.kind === 'pair') { pairs.push(r); continue; }
+    if (!r.tg) {
+      const need = r.target === 'teacher' ? "a teacher's desk" : r.target === 'sensory' ? 'a sensory corner' : 'a whiteboard';
+      return { status: 'impossible', why: `${r.text}. The room needs ${need} for this rule.` };
+    }
+    for (const n of r.members) {
+      if (!dom[n]) continue;
+      dom[n] = dom[n].filter(id => {
+        const p = S[id];
+        const x = r.target === 'back' ? Math.round((r.far - rd(p, r.tg)) / U) : Math.round(rd(p, r.tg) / U);
+        return x <= r.n;
+      });
+      if (!dom[n].length) return { status: 'impossible', why: `${r.text}. No seat in the room is close enough for ${n}.` };
+    }
+  }
+
+  // Step 2: depth-first search over students, most-restricted first, checking pair rules as seats are filled
+  const order = base.students.slice().sort((x, y) => dom[x].length - dom[y].length);
+  const pairsOf = {};
+  pairs.forEach(r => [r.a, r.b].forEach(n => (pairsOf[n] = pairsOf[n] || []).push(r)));
+  const A = {}, used = new Set();
+  let nodes = 0;
+  const okSeat = (n, sid) => {
+    for (const r of pairsOf[n] || []) {
+      const o = r.a === n ? r.b : r.a, os = A[o];
+      if (!os) continue;
+      const d = Math.round(dd(S[sid], S[os]) / U);
+      if (r.type === 'apart' ? d < r.n : d > r.n) return false;
+    }
+    return true;
+  };
+  function* dfs(i) {
+    if (i === order.length) return true;
+    if (++nodes % 2000 === 0) yield;
+    const n = order[i];
+    for (const sid of dom[n]) {
+      if (used.has(sid) || !okSeat(n, sid)) continue;
+      A[n] = sid; used.add(sid);
+      if (yield* dfs(i + 1)) return true;
+      delete A[n]; used.delete(sid);
+    }
+    return false;
+  }
+  if (yield* dfs(0)) return { status: 'ok' };
+  return { status: 'impossible', why: 'No seating puts every student in a seat that satisfies all the rules at the same time.' };
+}
+// Runs the check while keeping the page responsive. Returns {status:'ok'|'impossible'|'unknown'|'cancelled', why}.
+async function checkRules(base) {
+  const ld = $('#loadDlg');
+  $('#liveRoom').innerHTML = ''; $('#runs').innerHTML = ''; $('#barFill').style.width = '0%';
+  $('#busyDetail').textContent = 'Checking whether every rule can be met at the same time…';
+  $('#auto').disabled = true;
+  let cancelled = false;
+  $('#cancelGen').onclick = () => { cancelled = true; };
+  ld.onclose = () => { cancelled = true; };
+  ld.show();
+  const t0 = Date.now(), it = feasibility(base);
+  let res = null;
+  while (true) {
+    const step = it.next();
+    if (step.done) { res = step.value; break; }
+    if (cancelled) { res = { status: 'cancelled' }; break; }
+    if (Date.now() - t0 > CHECK_MS) { res = { status: 'unknown', why: `The check ran for ${CHECK_MS / 1000} seconds without an answer. The rules may still be possible, but the room is too tangled to tell quickly.` }; break; }
+    $('#busyDetail').textContent = `Checking… ${Math.round((Date.now() - t0) / 1000)} s`;
+    await tick();
+  }
+  ld.onclose = null; $('#cancelGen').onclick = null;
+  ld.close(); $('#auto').disabled = false;
+  return res;
+}
+
+const sameRuns = runs => runs.map(r => r.name);
+function liveRender(runs, st, limitMs, started) {
+  const G = motionGSAP();
+  $('#liveRoom').innerHTML = st.bestA ? (() => {
+    const atSeat = {}; for (const n in st.bestA) atSeat[st.bestA[n]] = n;
+    return roomSVG(atSeat, new Set(), false);
+  })() : roomSVG({}, new Set(), false);
+  if (G && st.bestA) G.fromTo('#liveRoom .seat.filled', { opacity: 0.35 }, { opacity: 1, duration: 0.35, stagger: 0.01, overwrite: true });
+  $('#runs').innerHTML = runs.map(r => `<div class="${st.bestRun === r.name ? 'best' : ''}"><span>${esc(r.name)}</span><span>${r.tries} tr${r.tries === 1 ? 'y' : 'ies'} · ${r.bestCost === Infinity ? '—' : r.bestCost + ' unmet'}</span></div>`).join('');
+  const elapsed = Date.now() - started;
+  $('#barFill').style.width = isFinite(limitMs) ? Math.min(100, elapsed / limitMs * 100) + '%' : '0%';
+  $('#busyDetail').textContent = st.bestCost === Infinity
+    ? 'Starting algorithms…'
+    : `Best: ${st.bestCost === 0 ? 'all rules met' : st.bestCost + ' unmet'} (${st.bestRun}) · ${Math.round(elapsed / 1000)} s of ${isFinite(limitMs) ? Math.round(limitMs / 1000) + ' s' : 'no time limit'}`;
+}
+function restoreFromMap(A) {
+  seatOf = {}; studentAt = {};
+  for (const n in A) putSeat(n, A[n]);
+}
+async function generate(opts = {}) {
+  if (!students.length) return ask({ title: 'No students yet', body: '<p>Add students first, then generate a seating plan.</p>', buttons: [{ label: 'OK', value: 1, cls: 'filled' }] });
+  if (!allSeats().length) return ask({ title: 'No seats yet', body: '<p>Add at least one table to the room.</p>', buttons: [{ label: 'OK', value: 1, cls: 'filled' }] });
+
+  const before = snapshot();
+  prune();
+  const base = buildCfg();
+  if (!opts.skipCheck) {
+    const verdict = await checkRules(base);
+    if (verdict.status === 'cancelled') return;
+    if (verdict.status !== 'ok') {
+      const impossible = verdict.status === 'impossible';
+      const pick = await ask({
+        title: impossible ? "These rules can't all be met" : "Couldn't tell if the rules can be met",
+        body: `<p>${esc(verdict.why)}</p>
+               <p class="hint">${impossible ? 'Generating will still run and show the closest seating it finds, but some rules will be broken.' : 'Generating will still run and stop at the limits you set.'}</p>`,
+        buttons: [
+          { label: 'Edit rules', value: 'edit' },
+          { label: 'Ignore, continue', value: 'ignore', cls: 'filled' }
+        ]
+      });
+      if (pick !== 'ignore') return;
+    }
+  }
+  const limitMs = cfg.seconds * 1000;
+  const started = Date.now(), deadline = started + limitMs;
+  const runs = ALGOS.filter(a => chosenAlgos.has(a.id)).map(a => ({ name: a.name, strategy: a.id, tries: 0, bestCost: Infinity, done: false, h: null }));
+  if (!runs.length) return ask({ title: 'No algorithms selected', body: '<p>Choose at least one algorithm from the Algorithms button.</p>', buttons: [{ label: 'OK', value: 1, cls: 'filled' }] });
+  const st = { bestCost: Infinity, bestA: null, bestRun: null };
+
+  const ld = $('#loadDlg');
+  $('#auto').disabled = true;
+  $('#busyDetail').textContent = 'Starting algorithms…';
+  $('#barFill').style.width = '0%';
+  liveRender(runs, st, limitMs, started);
+  ld.show();
+
+  const reason = await new Promise(resolve => {
+    let settled = false, timer = null, ticker = null;
+    const finish = why => {
+      if (settled) return; settled = true;
+      runs.forEach(r => r.h && r.h.kill());
+      clearTimeout(timer); clearInterval(ticker);
+      resolve(why);
+    };
+    const consider = (run, m) => {
+      run.tries = m.tries; run.bestCost = m.bestCost;
+      if (m.bestA && m.bestCost < st.bestCost) { st.bestCost = m.bestCost; st.bestA = m.bestA; st.bestRun = run.name; }
+    };
+    $('#cancelGen').onclick = () => finish('cancelled');
+    ld.onclose = () => finish('cancelled');
+    if (isFinite(limitMs)) timer = setTimeout(() => finish('time'), limitMs + 300);
+    ticker = setInterval(() => liveRender(runs, st, limitMs, started), 250);
+
+    runs.forEach(run => {
+      run.h = startRunner({ ...base, strategy: run.strategy, seed: (Math.random() * 2 ** 31) | 0, maxTries: cfg.tries, deadline, steps: 3000 },
+        m => { consider(run, m); liveRender(runs, st, limitMs, started); if (st.bestCost === 0) finish('solved'); },
+        m => {
+          consider(run, m); run.done = true;
+          liveRender(runs, st, limitMs, started);
+          if (st.bestCost === 0) finish('solved');
+          else if (runs.every(r => r.done)) finish(Date.now() >= deadline ? 'time' : 'tries');
+        });
+    });
+  });
+
+  ld.onclose = null;
+  $('#cancelGen').onclick = null;
+  ld.close();
+  $('#auto').disabled = false;
+  if (st.bestA) restoreFromMap(st.bestA); else restore(before);
+  sel = null; pending = null;
+  refresh();
+
+  const tries = runs.reduce((a, r) => a + r.tries, 0);
+  if (reason === 'solved') { celebrate(); showToast(`All rules met by ${st.bestRun} after ${runs.find(r => r.name === st.bestRun).tries} tries.`); return; }
+  const why = { cancelled: 'You stopped generating.', tries: `Each algorithm reached the limit of ${fmtLim(cfg.tries, '')} tries.`, time: `Reached the ${fmtLim(cfg.seconds, ' second')} timeout.` }[reason];
+  const unmet = brokenRules();
+  if (!unmet.length) { showToast('Seating generated.'); return; }
+  shakeBad();
+  const choice = await ask({
+    title: "Couldn't meet every rule",
+    body: `<p>${why} The best seating (from ${esc(st.bestRun || 'none')}, ${tries} tries in total) still breaks these rules:</p>
+           <ul>${unmet.map(r => `<li>${esc(ruleText(r))}</li>`).join('')}</ul>
+           <p class="hint">Try moving a table or the sensory corner, relax a distance, or raise the limits.</p>`,
+    buttons: [
+      { label: 'Undo', value: 'undo' },
+      { label: 'Limits…', value: 'limits' },
+      { label: 'Keep this seating', value: 'keep', cls: 'tonal' },
+      { label: 'Try again', value: 'again', cls: 'filled' }
+    ]
+  });
+  if (choice === 'undo') { restore(before); refresh(); }
+  else if (choice === 'limits') openLimits();
+  else if (choice === 'again') generate({ skipCheck: true });
+}
+
+/* ---------- Rendering ---------- */
+function roomSVG(atSeat, bs, withSel) {
+  let s = `<rect class="floor" x="0" y="0" width="${W}" height="${H}" rx="16"/>`;
+  s += `<rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="16" fill="none" stroke="#707973" stroke-width="4"/>`;
+  if (snapOn) {
+    const g = gridSize;
+    s += `<defs><pattern id="gridPat" width="${g}" height="${g}" patternUnits="userSpaceOnUse"><path d="M ${g} 0 L 0 0 0 ${g}" fill="none" stroke="#C0C9C2" stroke-width="0.6"/></pattern></defs>`;
+    s += `<rect width="${W}" height="${H}" fill="url(#gridPat)" style="pointer-events:none"/>`;
+  }
+  for (const it of items) {
+    const isSel = withSel && sel && sel.kind === 'item' && sel.id === it.id;
+    const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+    const tr = it.rot ? ` transform="rotate(${it.rot} ${cx} ${cy})"` : '';
+    const c = `item ${it.type}${isSel ? ' selected' : ''}`;
+    if (it.type === 'table' && it.shape === 'round') {
+      s += `<g${tr}><circle class="${c} table" data-id="${it.id}" cx="${cx}" cy="${cy}" r="${it.w / 2}"/></g>`;
+    } else {
+      const extra = it.type === 'table' ? ' table' : '';
+      const rx = it.type === 'table' ? 10 : it.type === 'sensory' ? 14 : 4;
+      s += `<g${tr}><rect class="${c}${extra}" data-id="${it.id}" x="${it.x}" y="${it.y}" width="${it.w}" height="${it.h}" rx="${rx}"/></g>`;
+    }
+    if (it.type === 'table') s += `<text class="lbl" x="${cx}" y="${cy + 4}">Table ${it.n}</text>`;
+    else if (LABELS[it.type]) s += `<text class="lbl" x="${cx}" y="${cy + 4}">${LABELS[it.type]}</text>`;
+  }
+  for (const t of tables()) for (const p of seatPositions(t)) {
+    const who = atSeat[p.id];
+    const isSel = withSel && sel && sel.kind === 'seat' && sel.id === p.id;
+    const cls = `seat${who !== undefined ? ' filled' : ''}${bs.has(p.id) ? ' bad' : ''}${isSel ? ' selected' : ''}`;
+    const tg = who !== undefined && tags[who]?.length ? ' · ' + tags[who].join(', ') : '';
+    s += `<g class="${cls}" data-seat="${p.id}"><title>${who !== undefined ? esc(who + tg) : 'Empty seat'}</title><circle class="hit" cx="${p.x}" cy="${p.y}" r="28"/><circle cx="${p.x}" cy="${p.y}" r="19"/>` +
+         `<text x="${p.x}" y="${p.y + 4}">${who !== undefined ? esc(who.split(' ')[0].slice(0, 8)) : ''}</text></g>`;
+  }
+  return s;
+}
+const motionGSAP = () => (window.gsap && matchMedia('(prefers-reduced-motion: no-preference)').matches) ? window.gsap : null;
+let prevFilled = new Set();
+// Seats that just became filled pop into place
+function animateSeats() {
+  // Pop-in is a CSS animation on the seat circle only. Animating the seat group moved its drawing.
+  const now = new Set(Object.keys(studentAt));
+  room.querySelectorAll('[data-seat]').forEach(g => {
+    if (now.has(g.dataset.seat) && !prevFilled.has(g.dataset.seat)) g.classList.add('pop');
+  });
+  prevFilled = now;
+}
+function celebrate() {
+  const G = motionGSAP(); if (!G) return;
+  G.fromTo(room.querySelectorAll('.seat.filled circle'), { scale: 0.5, transformOrigin: '50% 50%' }, { scale: 1, duration: 0.7, ease: 'elastic.out(1,.5)', stagger: 0.04 });
+}
+function shakeBad() {
+  const G = motionGSAP(); if (!G) return;
+  const bad = room.querySelectorAll('.seat.bad');
+  if (bad.length) G.fromTo(bad, { x: -4 }, { x: 4, duration: 0.08, repeat: 5, yoyo: true, ease: 'none', clearProps: 'x' });
+}
+
+function render() {
+  prune();
+  UNIT = seatUnit();
+  for (const it of items) placeCenter(it, it.x + it.w / 2, it.y + it.h / 2);
+  const bs = new Set();
+  brokenRules().forEach(r => membersOf(r).forEach(n => seatOf[n] && bs.add(seatOf[n])));
+  room.innerHTML = roomSVG(studentAt, bs, true);
+  animateSeats();
+}
+
+function renderInspector() {
+  const box = $('#inspector');
+  if (!sel) { box.innerHTML = '<p class="hint">Drag tables, windows, the whiteboard and the sensory corner. Click a table or seat to edit it.</p>'; return; }
+  if (sel.kind === 'seat') {
+    const [tid, k] = sel.id.split(':');
+    const t = items.find(i => i.id === tid);
+    if (!t) { sel = null; return renderInspector(); }
+    box.innerHTML = `<h3>Table ${t.n}, seat ${+k + 1}</h3>
+      <md-outlined-select label="Student" id="seatPick"><md-select-option value=""><div slot="headline">Empty</div></md-select-option>${students.map(n => `<md-select-option value="${esc(n)}"><div slot="headline">${esc(n)}</div></md-select-option>`).join('')}</md-outlined-select>`;
+    const sp = $('#seatPick');
+    sp.value = studentAt[sel.id] ?? '';
+    sp.onchange = () => { if (sp.value) putSeat(sp.value, sel.id); else unsetSeat(sel.id); refresh(); };
+    return;
+  }
+  const it = items.find(i => i.id === sel.id);
+  if (!it) { sel = null; return renderInspector(); }
+  const title = it.type === 'table' ? `Table ${it.n}` : (LABELS[it.type] || (it.w < it.h ? 'Tall window' : 'Wide window'));
+  box.innerHTML = `<h3>${title}</h3>
+    <div class="grid2">
+      <md-outlined-text-field label="Width" id="fw" type="number" min="30" value="${it.w}"></md-outlined-text-field>
+      <md-outlined-text-field label="Height" id="fh" type="number" min="14" value="${it.h}"></md-outlined-text-field>
+      ${it.type === 'table' ? `<div class="seatpick" style="grid-column:1/3">
+        <span class="seatlbl">Seats per table</span>
+        <div class="stepper">
+          <md-icon-button id="sMinus" aria-label="Fewer seats"><span class="ms">remove</span></md-icon-button>
+          <span id="sCount" class="count">${it.seats}</span>
+          <md-icon-button id="sPlus" aria-label="More seats"><span class="ms">add</span></md-icon-button>
+        </div>
+        <md-outlined-select label="Preset" id="sPreset">${[2,4,6,8,10,12].map(n => `<md-select-option value="${n}"><div slot="headline">${n}</div></md-select-option>`).join('')}</md-outlined-select>
+        <md-text-button id="sAll">Apply to all tables</md-text-button>
+      </div>
+      <md-outlined-select label="Shape" id="fshape"><md-select-option value="rect"><div slot="headline">Rectangle</div></md-select-option><md-select-option value="round"><div slot="headline">Round</div></md-select-option></md-outlined-select>` : ''}
+    </div>
+    <div class="row">
+      <md-filled-tonal-button id="frot"><span slot="icon" class="ms">rotate_right</span>Rotate 90°</md-filled-tonal-button>
+      <md-outlined-text-field label="Angle°" style="flex:0 0 110px" id="fang" type="number" step="15" value="${it.rot || 0}"></md-outlined-text-field>
+    </div>
+    <div class="row"><md-outlined-button id="fdel">Delete</md-outlined-button></div>`;
+  const num = (id, fn) => $('#' + id).addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v)) { fn(v); render(); }
+  });
+  num('fw', v => { it.w = snapSize(clamp(v, 30, W)); placeCenter(it, it.x + it.w / 2, it.y + it.h / 2); });
+  num('fh', v => { it.h = snapSize(clamp(v, 14, H)); placeCenter(it, it.x + it.w / 2, it.y + it.h / 2); });
+  if (it.type === 'table') {
+    const setSeats = n => {
+      it.seats = clamp(n, 1, 12);
+      prune(); refresh();
+    };
+    $('#sMinus').onclick = () => setSeats(it.seats - 1);
+    $('#sPlus').onclick = () => setSeats(it.seats + 1);
+    $('#sPreset').onchange = e => setSeats(+e.target.value);
+    $('#sAll').onclick = () => {
+      tables().forEach(t => t.seats = clamp(it.seats, 1, 12));
+      prune(); refresh();
+      showToast(`All tables now have ${it.seats} seats.`);
+    };
+    const sh = $('#fshape'); sh.value = it.shape;
+    sh.onchange = () => { it.shape = sh.value; render(); };
+  }
+  $('#frot').onclick = () => { rotateItem(it, 90); refresh(); };
+  $('#fang').addEventListener('change', e => {
+    const v = parseFloat(e.target.value);
+    if (isNaN(v)) return;
+    it.rot = ((v % 360) + 360) % 360; placeCenter(it, it.x + it.w / 2, it.y + it.h / 2); refresh();
+  });
+  $('#fdel').onclick = () => { items = items.filter(i => i.id !== it.id); sel = null; refresh(); };
+}
+
+function keepValue(el, html) {
+  const v = el.value; el.innerHTML = html; el.value = v;
+}
+function renderSide() {
+  const sOpts = students.map(n => `<md-select-option value="${esc(n)}"><div slot="headline">${esc(n)}</div></md-select-option>`).join('');
+  keepValue($('#cA'), sOpts); keepValue($('#cB'), sOpts); keepValue($('#tagWho'), sOpts);
+  const pk = $('#pKind').value;
+  keepValue($('#pVal'), pk === 'tag'
+    ? allTags().map(t => `<md-select-option value="${esc(t)}"><div slot="headline">${esc(t)}</div></md-select-option>`).join('')
+    : sOpts);
+
+  $('#pool').innerHTML = students.length
+    ? students.map((n, i) => `<span class="chipwrap" style="--i:${i}"><span class="chip${seatOf[n] ? ' seated' : ''}${pending === n ? ' pending' : ''}" data-drag-student="${esc(n)}" title="Drag to a seat, or click then click a seat">${esc(n)}</span><md-icon-button data-remove="${esc(n)}" aria-label="Remove ${esc(n)}"><span class="ms">close</span></md-icon-button></span>`).join('')
+    : '<p class="hint">No students yet. Paste names above or add one.</p>';
+  $('#count').textContent = `${students.length} students · ${Object.keys(seatOf).length} seated`;
+
+  const tagged = students.filter(n => (tags[n] || []).length);
+  $('#tagged').innerHTML = tagged.length
+    ? tagged.map(n => `<div class="tagrow"><span class="tname" data-edit-tags="${esc(n)}">${esc(n)}</span>${tags[n].map(t => `<span class="tagchip">${esc(t)}<button class="tagx" data-untag-who="${esc(n)}" data-untag="${esc(t)}" aria-label="Remove ${esc(t)}">×</button></span>`).join('')}</div>`).join('')
+    : '<p class="hint">No tags yet.</p>';
+
+  const bad = new Set(brokenRules());
+  $('#rules').innerHTML = rules.length
+    ? rules.map((r, i) => `<div class="rule${bad.has(r) ? ' bad' : ''}" style="--i:${i}"><span>${esc(ruleText(r))}</span><md-icon-button data-del="${i}" aria-label="Remove rule"><span class="ms">close</span></md-icon-button></div>`).join('')
+    : '<p class="hint">No rules yet.</p>';
+
+  const seated = Object.keys(seatOf).length, seats = allSeats().length, broke = brokenRules().length;
+  const warn = [];
+  if (students.length > seats) warn.push(`${students.length - seats} without a seat`);
+  if (broke) warn.push(`${broke} rule${broke > 1 ? 's' : ''} not met`);
+  const miss = missingItems();
+  if (miss.length) warn.push(`add ${miss.join(' and ')} to the room`);
+  let msg = `${seated} of ${students.length} seated · ${seats} seats in room`;
+  if (pending) msg = `Click a seat to place <b>${esc(pending)}</b>.`;
+  $('#status').innerHTML = msg + (warn.length ? `<br><span class="warn">${warn.join(' · ')}</span>` : '');
+
+  $('#planBody').innerHTML = students.slice().sort((x, y) => x.localeCompare(y)).map(n => {
+    const s = seatOf[n];
+    const needs = (tags[n] || []).map(t => `<span class="tag">${esc(t)}</span>`).join('') || '—';
+    if (!s) return `<tr><td>${esc(n)}</td><td>${needs}</td><td colspan="2">Not seated</td></tr>`;
+    const [tid, k] = s.split(':');
+    const t = items.find(i => i.id === tid);
+    return `<tr><td>${esc(n)}</td><td>${needs}</td><td>Table ${t.n}</td><td>Seat ${+k + 1}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="hint">Add students to see the plan.</td></tr>';
+}
+
+function allTags() {
+  const set = new Set();
+  students.forEach(s => (tags[s] || []).forEach(t => set.add(t)));
+  return [...set].sort();
+}
+function refresh() { render(); renderSide(); renderInspector(); }
+function select(s) { sel = s; renderInspector(); render(); }
+
+/* ---------- Students & needs ---------- */
+function addStudents(list) {
+  for (const raw of list) {
+    const n = raw.split('\t')[0].trim();
+    if (!n) continue;
+    let name = n, k = 2;
+    while (students.includes(name)) name = `${n} (${k++})`;
+    students.push(name);
+  }
+}
+function removeStudent(name) {
+  const s = seatOf[name];
+  if (s) unsetSeat(s);
+  students = students.filter(x => x !== name);
+  delete tags[name];
+  rules = rules.filter(r => r.kind === 'place' ? !(r.by === 'name' && r.val === name) : (r.a !== name && r.b !== name));
+  if (pending === name) pending = null;
+  refresh();
+}
+function assignTo(name, seat) { putSeat(name, seat); pending = null; }
+
+$('#addNames').onclick = () => { addStudents($('#names').value.split(/\r?\n/)); $('#names').value = ''; refresh(); };
+$('#addOne').onclick = () => { const v = $('#oneName').value; if (!v.trim()) return; addStudents([v]); $('#oneName').value = ''; refresh(); };
+$('#oneName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#addOne').click(); });
+$('#clearStudents').onclick = async () => {
+  if (!students.length) return;
+  const ok = await ask({ title: 'Remove all students?', body: '<p>This clears the student list, their needs tags, their seats and any rules that use them.</p>', buttons: [{ label: 'Cancel', value: false }, { label: 'Remove all', value: true, cls: 'filled' }] });
+  if (!ok) return;
+  students = []; tags = {}; seatOf = {}; studentAt = {}; rules = []; pending = null; refresh();
+};
+$('#pool').addEventListener('click', e => { const b = e.target.closest('[data-remove]'); if (b) removeStudent(b.dataset.remove); });
+
+$('#tagSave').onclick = () => {
+  const who = $('#tagWho').value; if (!who) return;
+  const list = [...new Set($('#tagText').value.split(',').map(t => t.trim()).filter(Boolean))];
+  if (list.length) tags[who] = list; else delete tags[who];
+  $('#tagText').value = '';
+  refresh();
+};
+$('#tagged').addEventListener('click', e => {
+  const x = e.target.closest('[data-untag]');
+  if (x) {
+    const who = x.dataset.untagWho;
+    tags[who] = (tags[who] || []).filter(t => t !== x.dataset.untag);
+    if (!tags[who].length) delete tags[who];
+    refresh();
+    return;
+  }
+  const b = e.target.closest('[data-edit-tags]');
+  if (!b) return;
+  const who = b.dataset.editTags;
+  $('#tagWho').value = who;
+  $('#tagText').value = (tags[who] || []).join(', ');
+});
+
+/* ---------- Rules ---------- */
+$('#pKind').onchange = () => renderSide();
+$('#addRule').onclick = () => {
+  const a = $('#cA').value, b = $('#cB').value;
+  if (!a || !b || a === b) return;
+  rules.push({ kind: 'pair', a, b, type: $('#cType').value, n: +$('#cN').value || 2 });
+  refresh();
+};
+$('#addPlace').onclick = () => {
+  const val = $('#pVal').value; if (!val) return;
+  rules.push({ kind: 'place', by: $('#pKind').value, val, target: $('#pTarget').value, n: +$('#pN').value || 2 });
+  refresh();
+};
+$('#rules').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { rules.splice(+b.dataset.del, 1); refresh(); } });
+
+/* ---------- Pointer interactions: drag tables and students, click seats ---------- */
+function svgPt(e) {
+  const p = room.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(room.getScreenCTM().inverse());
+}
+function seatUnder(e) {
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const g = el && el.closest('[data-seat]');
+  return g ? g.dataset.seat : null;
+}
+
+document.addEventListener('pointerdown', e => {
+  const chip = e.target.closest('[data-drag-student]');
+  const seat = e.target.closest('[data-seat]');
+  const item = room.contains(e.target) ? e.target.closest('[data-id]') : null;
+  if (chip) press = { kind: 'student', name: chip.dataset.dragStudent, from: seatOf[chip.dataset.dragStudent] || null };
+  else if (seat && studentAt[seat.dataset.seat] !== undefined) press = { kind: 'student', name: studentAt[seat.dataset.seat], from: seat.dataset.seat };
+  else if (seat) press = { kind: 'seat', id: seat.dataset.seat };
+  else if (item) {
+    const it = items.find(i => i.id === item.dataset.id);
+    const p = svgPt(e);
+    press = { kind: 'item', it, offX: p.x - (it.x + it.w / 2), offY: p.y - (it.y + it.h / 2) };
+  } else if (room.contains(e.target)) press = { kind: 'none' };
+  else return;
+  press.sx = e.clientX; press.sy = e.clientY; press.moved = false;
+});
+
+window.addEventListener('pointermove', e => {
+  if (!press) return;
+  if (!press.moved && Math.hypot(e.clientX - press.sx, e.clientY - press.sy) < 5) return;
+  press.moved = true;
+  if (press.kind === 'item') {
+    const p = svgPt(e);
+    placeCenter(press.it, p.x - press.offX, p.y - press.offY);
+    render();
+  } else if (press.kind === 'student') {
+    const g = $('#ghost');
+    g.hidden = false; g.textContent = press.name;
+    g.style.left = e.clientX + 14 + 'px'; g.style.top = e.clientY + 10 + 'px';
+    document.querySelectorAll('.seat.drop').forEach(n => n.classList.remove('drop'));
+    const s = seatUnder(e);
+    if (s) room.querySelector(`[data-seat="${s}"]`)?.classList.add('drop');
+  }
+});
+
+window.addEventListener('pointerup', e => {
+  if (!press) return;
+  const p = press; press = null;
+  if (p.kind === 'item') {
+    if (p.moved) render(); else select({ kind: 'item', id: p.it.id });
+  } else if (p.kind === 'none') {
+    if (!p.moved) select(null);
+  } else if (p.kind === 'seat') {
+    if (!p.moved) {
+      if (pending && studentAt[p.id] === undefined) { assignTo(pending, p.id); refresh(); }
+      else select({ kind: 'seat', id: p.id });
+    }
+  } else if (p.kind === 'student') {
+    $('#ghost').hidden = true;
+    document.querySelectorAll('.seat.drop').forEach(n => n.classList.remove('drop'));
+    if (p.moved) {
+      const seat = seatUnder(e);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (seat) assignTo(p.name, seat);
+      else if (p.from && el && el.closest('.side')) unsetSeat(p.from);
+      refresh();
+    } else if (p.from) {
+      select({ kind: 'seat', id: p.from });
+    } else {
+      pending = pending === p.name ? null : p.name;
+      refresh();
+    }
+  }
+});
+
+/* ---------- Toolbar & actions ---------- */
+document.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => {
+  const it = addItem(btn.dataset.add, 380 + Math.random() * 80, 250 + Math.random() * 60);
+  select({ kind: 'item', id: it.id });
+}));
+$('#snap').onchange = e => { snapOn = e.target.checked; refresh(); };
+$('#gridSize').onchange = e => { gridSize = +e.target.value; refresh(); };
+document.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() !== 'r' || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest('input, textarea, select')) return;
+  if (sel && sel.kind === 'item') { const it = items.find(i => i.id === sel.id); if (it) { rotateItem(it, 90); refresh(); } }
+});
+$('#reset').onclick = async () => {
+  const ok = await ask({ title: 'Reset the room?', body: '<p>Tables, windows and the seating will go back to the starting layout. Students and rules are kept.</p>', buttons: [{ label: 'Cancel', value: false }, { label: 'Reset room', value: true, cls: 'filled' }] });
+  if (!ok) return;
+  seatOf = {}; studentAt = {}; pending = null; seed(); refresh();
+};
+$('#auto').onclick = () => { pending = null; generate({}); };
+$('#clear').onclick = () => { seatOf = {}; studentAt = {}; pending = null; refresh(); };
+function buildPrintSheet(withNeeds = false) {
+  const bs = new Set();
+  brokenRules().forEach(r => membersOf(r).forEach(n => seatOf[n] && bs.add(seatOf[n])));
+  const rows = students.slice().sort((x, y) => x.localeCompare(y)).map(n => {
+    const s = seatOf[n], needCell = withNeeds ? `<td>${esc((tags[n] || []).join(', ') || '—')}</td>` : '';
+    if (!s) return `<tr><td>${esc(n)}</td>${needCell}<td colspan="2">Not seated</td></tr>`;
+    const [tid, k] = s.split(':');
+    const t = items.find(i => i.id === tid);
+    return `<tr><td>${esc(n)}</td>${needCell}<td>Table ${t.n}</td><td>Seat ${+k + 1}</td></tr>`;
+  }).join('');
+  const needHead = withNeeds ? '<th>Needs</th>' : '';
+  $('#printSheet').innerHTML = `<h1>Seating plan</h1>
+    <p class="psub">${new Date().toLocaleDateString()}</p>
+    <svg class="psvg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${roomSVG(studentAt, bs, false)}</svg>
+    <table class="ptable"><thead><tr><th>Student</th>${needHead}<th>Table</th><th>Seat</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function csvEscape(v) { const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }
+function downloadCsv(withNeeds = false) {
+  const head = withNeeds ? ['Student', 'Needs', 'Table', 'Seat'] : ['Student', 'Table', 'Seat'];
+  const rows = [head];
+  students.slice().sort((x, y) => x.localeCompare(y)).forEach(n => {
+    const s = seatOf[n];
+    const needs = (tags[n] || []).join('; ');
+    const cells = s
+      ? [n, ...(withNeeds ? [needs] : []), 'Table ' + items.find(i => i.id === s.split(':')[0]).n, +s.split(':')[1] + 1]
+      : [n, ...(withNeeds ? [needs] : []), '', ''];
+    rows.push(cells);
+  });
+  const blob = new Blob(['\uFEFF' + rows.map(r => r.map(csvEscape).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'seating-plan.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+let dlNeedsChoice = false;
+document.addEventListener('change', e => { if (e.target && e.target.id === 'dlNeeds') dlNeedsChoice = e.target.checked; });
+$('#dl').onclick = async () => {
+  dlNeedsChoice = false;
+  const choice = await ask({
+    title: 'Download seating plan',
+    body: '<p>PDF opens your browser’s print window. Choose “Save as PDF” as the destination.</p><p>CSV opens in Excel or Google Sheets.</p><label class="algo"><md-checkbox id="dlNeeds"></md-checkbox><span>Include students’ needs on the printout and CSV. Leave this off to keep needs private.</span></label>',
+    buttons: [
+      { label: 'Cancel', value: null },
+      { label: 'CSV', value: 'csv', cls: 'tonal' },
+      { label: 'PDF', value: 'pdf', cls: 'filled' }
+    ]
+  });
+  if (!choice) return;
+  const withNeeds = dlNeedsChoice;
+  const go = () => {
+    if (choice === 'csv') downloadCsv(withNeeds);
+    else { buildPrintSheet(withNeeds); setTimeout(() => window.print(), 300); }
+  };
+  go();
+  while (true) {
+    const pick = await ask({
+      title: 'Your download should start shortly',
+      body: '<p class="smallnote">Nothing happened? Click “Re-Download” again or allow downloads for this website.</p>',
+      buttons: [
+        { label: 'Re-Download', value: 'again', cls: 'tonal' },
+        { label: 'OK', value: 'ok', cls: 'filled' }
+      ]
+    });
+    if (pick !== 'again') break;
+    go();
+  }
+};
+
+/* ---------- Start with a sample class ---------- */
+seed();
+addStudents(['Ava Tan','Ben Lim','Chloe Ng','Daniel Koh','Elaine Wong','Farhan Ali','Grace Lee','Hiro Sato','Isabel Cruz','Jun Park','Kai Chen','Lina Rahman']);
+rules = [
+  { kind: 'pair', a: 'Ben Lim', b: 'Daniel Koh', type: 'apart', n: 2 },
+  { kind: 'pair', a: 'Grace Lee', b: 'Hiro Sato', type: 'near', n: 1 }
+];
+generate();
+}
+async function loadMaterial() {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/@material/web@2.5.0/all.js/+esm',
+    'https://esm.sh/@material/web@2.5.0/all.js'
+  ];
+  for (const u of urls) {
+    try {
+      await Promise.race([import(u), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))]);
+      return u;
+    } catch (err) { console.warn('Material Web failed from', u, err); }
+  }
+  return null;
+}
+loadMaterial().then(src => {
+  const el = document.getElementById('matStatus');
+  if (el) el.textContent = src
+    ? `Material Web 2.5.0 loaded from ${new URL(src).hostname}.`
+    : "Couldn't load Material Web from jsDelivr or esm.sh, so the controls will look plain.";
+  boot();
+});
+</script>
+</body>
+</html>
